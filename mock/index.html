@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>(仮称)SNS - プロトタイプMock</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header id="app-header" class="app-header hidden">
+    <div class="app-header-title" data-action="go-timeline">(仮称)SNS</div>
+    <nav class="app-header-nav">
+      <button type="button" class="icon-btn" data-action="go-search" title="ユーザー検索">🔍</button>
+      <button type="button" class="user-chip" data-action="go-my-profile"></button>
+      <button type="button" class="btn btn-outline" data-action="logout">ログアウト</button>
+    </nav>
+  </header>
+
+  <main id="app"></main>
+
+  <script src="script.js"></script>
+</body>
+</html>
