@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.snsapp.mapper.TokenBlacklistMapper">
+
+    <insert id="insert">
+        INSERT INTO token_blacklist (jti, expires_at) VALUES (#{jti}, #{expiresAt})
+    </insert>
+
+    <select id="existsByJti" resultType="boolean">
+        SELECT EXISTS(SELECT 1 FROM token_blacklist WHERE jti = #{jti})
+    </select>
+
+    <delete id="deleteExpired">
+        DELETE FROM token_blacklist WHERE expires_at &lt; #{now}
+    </delete>
+
+</mapper>
