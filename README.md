@@ -91,3 +91,4 @@ AWSデプロイは次フェーズ以降で進める。
 ## 開発ワークフロー
 
 Issue登録・ブランチ運用・Pull Requestのルールは[CLAUDE.md](CLAUDE.md)を参照。
+test
