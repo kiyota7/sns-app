@@ -15,23 +15,38 @@ import java.util.UUID;
 @Service
 public class JwtService {
 
+    public static final String TYPE_ACCESS = "access";
+    public static final String TYPE_REFRESH = "refresh";
+
     private final SecretKey key;
-    private final long expirationMs;
+    private final long accessExpirationMs;
+    private final long refreshExpirationMs;
 
     public JwtService(
             @Value("${app.jwt.secret}") String secret,
-            @Value("${app.jwt.expiration-ms}") long expirationMs
+            @Value("${app.jwt.access-expiration-ms}") long accessExpirationMs,
+            @Value("${app.jwt.refresh-expiration-ms}") long refreshExpirationMs
     ) {
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-        this.expirationMs = expirationMs;
+        this.accessExpirationMs = accessExpirationMs;
+        this.refreshExpirationMs = refreshExpirationMs;
     }
 
-    public String generateToken(Long userId, String username) {
+    public String generateAccessToken(Long userId, String username) {
+        return generateToken(userId, username, TYPE_ACCESS, accessExpirationMs);
+    }
+
+    public String generateRefreshToken(Long userId, String username) {
+        return generateToken(userId, username, TYPE_REFRESH, refreshExpirationMs);
+    }
+
+    private String generateToken(Long userId, String username, String type, long expirationMs) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .id(UUID.randomUUID().toString())
                 .subject(username)
                 .claim("userId", userId)
+                .claim("type", type)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusMillis(expirationMs)))
                 .signWith(key)

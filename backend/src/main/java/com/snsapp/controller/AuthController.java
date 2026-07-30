@@ -2,6 +2,8 @@ package com.snsapp.controller;
 
 import com.snsapp.dto.AuthResponse;
 import com.snsapp.dto.LoginRequest;
+import com.snsapp.dto.RefreshRequest;
+import com.snsapp.dto.RefreshResponse;
 import com.snsapp.dto.RegisterRequest;
 import com.snsapp.dto.UserResponse;
 import com.snsapp.security.AuthenticatedUser;
@@ -32,10 +34,19 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(request));
     }
 
+    @PostMapping("/refresh")
+    public ResponseEntity<RefreshResponse> refresh(@Valid @RequestBody RefreshRequest request) {
+        return ResponseEntity.ok(authService.refresh(request.getRefreshToken()));
+    }
+
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@RequestHeader("Authorization") String authorizationHeader) {
-        String token = authorizationHeader.replaceFirst("^Bearer ", "");
-        authService.logout(token);
+    public ResponseEntity<Void> logout(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestBody(required = false) RefreshRequest request
+    ) {
+        String accessToken = authorizationHeader.replaceFirst("^Bearer ", "");
+        String refreshToken = request != null ? request.getRefreshToken() : null;
+        authService.logout(accessToken, refreshToken);
         return ResponseEntity.noContent().build();
     }
 

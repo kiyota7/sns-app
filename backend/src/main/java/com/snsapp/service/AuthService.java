@@ -2,6 +2,7 @@ package com.snsapp.service;
 
 import com.snsapp.dto.AuthResponse;
 import com.snsapp.dto.LoginRequest;
+import com.snsapp.dto.RefreshResponse;
 import com.snsapp.dto.RegisterRequest;
 import com.snsapp.dto.UserResponse;
 import com.snsapp.exception.DuplicateUserException;
@@ -11,10 +12,9 @@ import com.snsapp.mapper.UserMapper;
 import com.snsapp.model.User;
 import com.snsapp.security.JwtService;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.time.Instant;
 
 @Service
 public class AuthService {
@@ -64,11 +64,38 @@ public class AuthService {
         return buildAuthResponse(user);
     }
 
-    public void logout(String token) {
-        Claims claims = jwtService.parseClaims(token);
-        String jti = claims.getId();
-        Instant expiresAt = claims.getExpiration().toInstant();
-        tokenBlacklistMapper.insert(jti, expiresAt.toString());
+    /**
+     * リフレッシュトークンを検証し、新しいアクセストークン・リフレッシュトークンの組を発行する。
+     * 使用済みのリフレッシュトークンはその場でblacklistに登録し(ローテーション)、
+     * 同じリフレッシュトークンを再利用できないようにする。
+     */
+    public RefreshResponse refresh(String refreshToken) {
+        Claims claims = parseValidRefreshClaims(refreshToken);
+
+        Long userId = ((Number) claims.get("userId")).longValue();
+        String username = claims.getSubject();
+
+        blacklist(claims);
+
+        String newAccessToken = jwtService.generateAccessToken(userId, username);
+        String newRefreshToken = jwtService.generateRefreshToken(userId, username);
+        return new RefreshResponse(newAccessToken, newRefreshToken);
+    }
+
+    /**
+     * アクセストークン・リフレッシュトークンの両方をblacklistに登録し、ログアウトさせる。
+     * リフレッシュトークンは省略可能(渡された場合のみ無効化する)。
+     */
+    public void logout(String accessToken, String refreshToken) {
+        blacklist(jwtService.parseClaims(accessToken));
+
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            try {
+                blacklist(jwtService.parseClaims(refreshToken));
+            } catch (JwtException ignored) {
+                // 既に期限切れ・不正なリフレッシュトークンは無視してよい(どのみち使えない)
+            }
+        }
     }
 
     public UserResponse getCurrentUser(Long userId) {
@@ -77,8 +104,30 @@ public class AuthService {
         return UserResponse.from(user);
     }
 
+    private Claims parseValidRefreshClaims(String refreshToken) {
+        Claims claims;
+        try {
+            claims = jwtService.parseClaims(refreshToken);
+        } catch (JwtException e) {
+            throw new InvalidCredentialsException("リフレッシュトークンが無効です。再度ログインしてください。");
+        }
+
+        if (!JwtService.TYPE_REFRESH.equals(claims.get("type"))) {
+            throw new InvalidCredentialsException("リフレッシュトークンが無効です。再度ログインしてください。");
+        }
+        if (tokenBlacklistMapper.existsByJti(claims.getId())) {
+            throw new InvalidCredentialsException("リフレッシュトークンが無効です。再度ログインしてください。");
+        }
+        return claims;
+    }
+
+    private void blacklist(Claims claims) {
+        tokenBlacklistMapper.insert(claims.getId(), claims.getExpiration().toInstant().toString());
+    }
+
     private AuthResponse buildAuthResponse(User user) {
-        String token = jwtService.generateToken(user.getId(), user.getUsername());
-        return new AuthResponse(token, UserResponse.from(user));
+        String accessToken = jwtService.generateAccessToken(user.getId(), user.getUsername());
+        String refreshToken = jwtService.generateRefreshToken(user.getId(), user.getUsername());
+        return new AuthResponse(accessToken, refreshToken, UserResponse.from(user));
     }
 }

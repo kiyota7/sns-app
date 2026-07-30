@@ -1,0 +1,64 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+.DS_Store
+dist
+dist-ssr
+coverage
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+*.tsbuildinfo
+
+.eslintcache
+
+# Cypress
+/cypress/videos/
+/cypress/screenshots/
+
+# Vitest
+__screenshots__/
+
+# Vite
+*.timestamp-*-*.mjs
+
+test-results/
+playwright-report/
+
+# create-vueスキャフォールドで生成されたが未使用のファイル群
+# (このプロジェクトはTypeScript/Pinia/Vitest/Cypress/Playwright/ESLintを使わない方針のため)
+/README.md
+/cypress.config.ts
+/cypress/
+/e2e/
+/eslint.config.ts
+/.oxlintrc.json
+/playwright.config.ts
+/vitest.config.ts
+/tsconfig.vitest.json
+/src/components/HelloWorld.vue
+/src/components/TheWelcome.vue
+/src/components/WelcomeItem.vue
+/src/components/__tests__/
+/src/components/icons/
+/src/stores/
+/src/views/AboutView.vue
+/src/views/HomeView.vue
+/src/assets/base.css
+/src/assets/logo.svg
