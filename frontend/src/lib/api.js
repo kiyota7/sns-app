@@ -1,5 +1,12 @@
 const STORAGE_KEY = 'sns-auth'
 
+export class AuthExpiredError extends Error {
+  constructor() {
+    super('認証の有効期限が切れました。再度ログインしてください。')
+    this.name = 'AuthExpiredError'
+  }
+}
+
 function loadAuth() {
   const raw = localStorage.getItem(STORAGE_KEY)
   return raw ? JSON.parse(raw) : null
@@ -58,20 +65,81 @@ async function login({ email, password }) {
   return auth
 }
 
+// リフレッシュトークンを使ってアクセストークン・リフレッシュトークンを再発行する。
+// 成功時は新しいトークンの組を保存し直す(ユーザー情報はそのまま維持する)。
+async function refresh() {
+  const current = loadAuth()
+  if (!current?.refreshToken) {
+    clearAuth()
+    throw new AuthExpiredError()
+  }
+
+  const response = await fetch('/api/auth/refresh', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refreshToken: current.refreshToken }),
+  })
+  if (!response.ok) {
+    clearAuth()
+    throw new AuthExpiredError()
+  }
+
+  const { accessToken, refreshToken } = await response.json()
+  saveAuth({ accessToken, refreshToken, user: current.user })
+  return accessToken
+}
+
+// 認証付きAPIリクエスト用の共通ラッパー。Authorizationヘッダーを自動で付与し、
+// アクセストークンが失効している(401)場合はリフレッシュを1回試みてからリトライする。
+async function authFetch(url, options = {}) {
+  const requestWith = (token) =>
+    fetch(url, {
+      ...options,
+      headers: {
+        ...options.headers,
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+  let accessToken = getAccessToken()
+  if (!accessToken) {
+    throw new AuthExpiredError()
+  }
+
+  let response = await requestWith(accessToken)
+
+  if (response.status === 401) {
+    accessToken = await refresh()
+    response = await requestWith(accessToken)
+  }
+
+  return response
+}
+
+async function me() {
+  const response = await authFetch('/api/auth/me')
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response))
+  }
+  const user = await response.json()
+  const current = loadAuth()
+  if (current) {
+    saveAuth({ ...current, user })
+  }
+  return user
+}
+
 async function logout() {
-  const auth = loadAuth()
-  if (auth) {
+  const current = loadAuth()
+  if (current) {
     try {
-      await fetch('/api/auth/logout', {
+      await authFetch('/api/auth/logout', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${auth.accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ refreshToken: auth.refreshToken }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: current.refreshToken }),
       })
     } catch {
-      // ネットワークエラー等でもクライアント側のログイン状態は必ずクリアする
+      // ネットワークエラー・トークン失効等でもクライアント側のログイン状態は必ずクリアする
     }
   }
   clearAuth()
@@ -81,6 +149,8 @@ export const auth = {
   register,
   login,
   logout,
+  refresh,
+  me,
   getUser,
   getAccessToken,
   isLoggedIn: () => getAccessToken() !== null,
