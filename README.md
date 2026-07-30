@@ -70,12 +70,29 @@ AWSデプロイは次フェーズ以降で進める。
 いいね数・コメント数は`posts`にカウンタを持たず、`likes`/`comments`をその都度`COUNT`集計して
 算出する方針としている。
 
+## プロトタイプMock
+
+技術スタックを決定する前に、要件定義書・機能一覧・画面設計書の内容(F-01〜F-15、S-01〜S-06)を
+一通り操作して確認できる、HTML/CSS/JavaScriptのみの静的プロトタイプを用意している
+(サーバー・データベースは使用せず、`mock/script.js`内のJavaScriptオブジェクトを疑似データベースとして
+`localStorage`に保存しているだけの簡易実装)。
+
+```bash
+cd mock
+python3 -m http.server 8899
+# ブラウザで http://localhost:8899 を開く
+```
+
+デモ用アカウント(いずれもパスワード: `password`): `tanaka@example.com` / `sato@example.com` /
+`suzuki@example.com` / `yamada@example.com`
+
 ## ディレクトリ構成
 
 ```
 .
 ├── 要件定義書.md
 ├── docs/            # 各種設計ドキュメント
+├── mock/            # HTML/CSS/JSのみのプロトタイプMock(DB・サーバーなし)
 └── .claude/skills/  # 開発支援スキル(タスクボードプロジェクトから流用)
 ```
 
@@ -84,6 +101,7 @@ AWSデプロイは次フェーズ以降で進める。
 ## 実装状況
 
 - [x] リポジトリ作成・要件定義ドキュメント一式(要件定義書・機能一覧・画面設計書・データベース設計書)
+- [x] HTML/CSS/JSプロトタイプMock
 - [ ] 技術スタックの選定
 - [ ] 機能実装
 - [ ] AWSデプロイ
