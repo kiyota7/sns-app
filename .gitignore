@@ -1,1 +1,14 @@
 .DS_Store
+
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/terraform.tfvars
+terraform/crash.log
+
+# 本番用環境変数(秘密情報)
+.env
+
+# docker-compose.prod.ymlがローカル実行時にマウントするデータディレクトリ
+/data/
