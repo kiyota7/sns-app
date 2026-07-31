@@ -3,6 +3,7 @@ package com.snsapp.service;
 import com.snsapp.dto.FollowResponse;
 import com.snsapp.dto.PostResponse;
 import com.snsapp.dto.ProfileResponse;
+import com.snsapp.dto.UserSearchResponse;
 import com.snsapp.exception.DuplicateUserException;
 import com.snsapp.exception.SelfFollowException;
 import com.snsapp.exception.UserNotFoundException;
@@ -64,6 +65,12 @@ public class UserService {
 
         UserProfile profile = findProfileOrThrow(followedId, followerId);
         return new FollowResponse(profile.isFollowedByCurrentUser(), profile.getFollowerCount());
+    }
+
+    public List<UserSearchResponse> search(String query, Long currentUserId) {
+        return userMapper.search(query, currentUserId).stream()
+                .map(UserSearchResponse::from)
+                .collect(Collectors.toList());
     }
 
     private UserProfile findProfileOrThrow(Long userId, Long currentUserId) {

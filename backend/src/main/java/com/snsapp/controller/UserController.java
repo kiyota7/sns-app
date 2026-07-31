@@ -4,6 +4,7 @@ import com.snsapp.dto.FollowResponse;
 import com.snsapp.dto.PostResponse;
 import com.snsapp.dto.ProfileResponse;
 import com.snsapp.dto.UpdateProfileRequest;
+import com.snsapp.dto.UserSearchResponse;
 import com.snsapp.security.AuthenticatedUser;
 import com.snsapp.service.UserService;
 import jakarta.validation.Valid;
@@ -21,6 +22,14 @@ public class UserController {
 
     public UserController(UserService userService) {
         this.userService = userService;
+    }
+
+    @GetMapping
+    public ResponseEntity<List<UserSearchResponse>> search(
+            @AuthenticationPrincipal AuthenticatedUser principal,
+            @RequestParam(defaultValue = "") String query
+    ) {
+        return ResponseEntity.ok(userService.search(query, principal.id()));
     }
 
     @GetMapping("/{id}")

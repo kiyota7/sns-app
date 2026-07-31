@@ -156,8 +156,9 @@ export const auth = {
   isLoggedIn: () => getAccessToken() !== null,
 }
 
-async function listPosts() {
-  const response = await authFetch('/api/posts')
+async function listPosts({ scope } = {}) {
+  const url = scope ? `/api/posts?scope=${encodeURIComponent(scope)}` : '/api/posts'
+  const response = await authFetch(url)
   if (!response.ok) {
     throw new Error(await parseErrorMessage(response))
   }
@@ -285,9 +286,18 @@ async function toggleFollow(id) {
   return response.json()
 }
 
+async function searchUsers(query) {
+  const response = await authFetch(`/api/users?query=${encodeURIComponent(query)}`)
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response))
+  }
+  return response.json()
+}
+
 export const users = {
   getProfile,
   getPosts: getUserPosts,
   updateProfile,
   toggleFollow,
+  search: searchUsers,
 }

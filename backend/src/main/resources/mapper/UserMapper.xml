@@ -62,4 +62,21 @@
         WHERE id = #{id}
     </update>
 
+    <resultMap id="UserSearchResultMap" type="com.snsapp.model.UserSearchResult">
+        <id property="id" column="id"/>
+        <result property="username" column="username"/>
+        <result property="followedByCurrentUser" column="followed_by_current_user"/>
+    </resultMap>
+
+    <select id="search" resultMap="UserSearchResultMap">
+        SELECT users.id, users.username,
+               EXISTS(
+                   SELECT 1 FROM follows
+                   WHERE follower_id = #{currentUserId} AND followed_id = users.id
+               ) AS followed_by_current_user
+        FROM users
+        WHERE users.username LIKE '%' || #{query} || '%' AND users.id != #{currentUserId}
+        ORDER BY users.username
+    </select>
+
 </mapper>

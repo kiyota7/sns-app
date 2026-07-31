@@ -9,6 +9,7 @@ const user = ref(auth.getUser())
 const postList = ref([])
 const loading = ref(true)
 const errorMessage = ref('')
+const activeTab = ref('all')
 
 const composeBody = ref('')
 const composeImageFile = ref(null)
@@ -16,9 +17,14 @@ const composeImagePreview = ref('')
 const composeSubmitting = ref(false)
 const fileInput = ref(null)
 
-onMounted(async () => {
+onMounted(() => loadTab('all'))
+
+async function loadTab(tab) {
+  activeTab.value = tab
+  loading.value = true
+  errorMessage.value = ''
   try {
-    postList.value = await posts.list()
+    postList.value = await posts.list(tab === 'following' ? { scope: 'following' } : {})
   } catch (error) {
     if (error instanceof AuthExpiredError) {
       router.push({ name: 'login' })
@@ -28,7 +34,7 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
-})
+}
 
 function handleImageChange(event) {
   const file = event.target.files[0]
@@ -55,7 +61,9 @@ async function handleCompose() {
   composeSubmitting.value = true
   try {
     const created = await posts.create({ body: composeBody.value, image: composeImageFile.value })
-    postList.value.unshift(created)
+    if (activeTab.value === 'all') {
+      postList.value.unshift(created)
+    }
     composeBody.value = ''
     removeComposeImage()
   } catch (error) {
@@ -86,12 +94,32 @@ async function handleLogout() {
   <header class="app-header">
     <div class="app-header-title">(仮称)SNS</div>
     <nav class="app-header-nav">
+      <RouterLink class="icon-btn" to="/search" title="ユーザー検索">🔍</RouterLink>
       <RouterLink class="user-chip" :to="`/users/${user?.id}`">{{ user?.username }}</RouterLink>
       <button type="button" class="btn btn-outline" @click="handleLogout">ログアウト</button>
     </nav>
   </header>
 
   <div class="page">
+    <div class="tabs">
+      <button
+        type="button"
+        class="tab-btn"
+        :class="{ active: activeTab === 'all' }"
+        @click="loadTab('all')"
+      >
+        全体
+      </button>
+      <button
+        type="button"
+        class="tab-btn"
+        :class="{ active: activeTab === 'following' }"
+        @click="loadTab('following')"
+      >
+        フォロー中
+      </button>
+    </div>
+
     <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
 
     <form class="post-form" @submit.prevent="handleCompose">
@@ -110,6 +138,9 @@ async function handleLogout() {
     </form>
 
     <p v-if="loading">読み込み中...</p>
+    <div v-else-if="postList.length === 0 && activeTab === 'following'" class="empty-state">
+      フォロー中の利用者の投稿がありません。<br />ユーザー検索からフォローしてみましょう。
+    </div>
     <div v-else-if="postList.length === 0" class="empty-state">まだ投稿がありません。</div>
     <template v-else>
       <PostCard
