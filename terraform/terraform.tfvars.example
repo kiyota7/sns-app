@@ -1,0 +1,11 @@
+# このファイルをコピーして terraform.tfvars を作成し、実際の値を入力すること。
+# terraform.tfvars は .gitignore 対象なのでコミットされない。
+
+aws_region = "ap-northeast-1"
+
+# https://github.com/settings/personal-access-tokens/new から、
+# kiyota7/sns-app リポジトリのみを対象に、Permissions -> Contents: Read-only で発行する
+github_pat = "github_pat_xxxxxxxxxxxxxxxxxxxxxxxx"
+
+# ランダムな値を生成して設定する(例: openssl rand -base64 48)
+jwt_secret = "change-me"
