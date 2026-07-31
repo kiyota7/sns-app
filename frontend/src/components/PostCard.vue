@@ -66,7 +66,7 @@ async function handleDelete() {
   <article class="post-card">
     <template v-if="editing">
       <div class="post-card-header">
-        <span class="post-author">{{ post.username }}</span>
+        <RouterLink class="post-author" :to="`/users/${post.userId}`">{{ post.username }}</RouterLink>
         <span class="post-time">{{ formatTime(post.createdAt) }}</span>
       </div>
       <textarea class="edit-post-textarea" v-model="editBody" rows="3"></textarea>
@@ -77,7 +77,7 @@ async function handleDelete() {
     </template>
     <template v-else>
       <div class="post-card-header">
-        <span class="post-author">{{ post.username }}</span>
+        <RouterLink class="post-author" :to="`/users/${post.userId}`">{{ post.username }}</RouterLink>
         <span class="post-time"
           >・{{ formatTime(post.createdAt) }}{{ post.updatedAt !== post.createdAt ? '(編集済み)' : '' }}</span
         >

@@ -1,6 +1,7 @@
 package com.snsapp.mapper;
 
 import com.snsapp.model.User;
+import com.snsapp.model.UserProfile;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -16,4 +17,8 @@ public interface UserMapper {
     Optional<User> findByUsername(@Param("username") String username);
 
     Optional<User> findById(@Param("id") Long id);
+
+    Optional<UserProfile> findProfileById(@Param("id") Long id, @Param("currentUserId") Long currentUserId);
+
+    void updateProfile(@Param("id") Long id, @Param("username") String username, @Param("bio") String bio);
 }
