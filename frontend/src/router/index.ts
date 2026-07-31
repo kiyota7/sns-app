@@ -15,9 +15,9 @@ const router = createRouter({
       component: () => import('../views/RegisterView.vue'),
     },
     {
-      path: '/welcome',
-      name: 'welcome',
-      component: () => import('../views/WelcomeView.vue'),
+      path: '/timeline',
+      name: 'timeline',
+      component: () => import('../views/TimelineView.vue'),
       meta: { requiresAuth: true },
     },
   ],

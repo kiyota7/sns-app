@@ -42,6 +42,39 @@ button {
   font-size: 1.1rem;
 }
 
+.app-header-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+}
+
+.icon-btn:hover {
+  background: var(--bg);
+}
+
+.user-chip {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  font-weight: bold;
+  color: var(--text);
+}
+
+.page {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 1.25rem;
+}
+
 .auth-page {
   max-width: 380px;
   margin: 4rem auto;
@@ -109,6 +142,21 @@ button {
   background: rgba(29, 161, 242, 0.1);
 }
 
+.btn-small {
+  padding: 0.3rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+.btn-danger {
+  background: transparent;
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.btn-danger:hover {
+  background: rgba(224, 36, 94, 0.1);
+}
+
 .error-message {
   color: var(--danger);
   background: rgba(224, 36, 94, 0.08);
@@ -135,16 +183,107 @@ button {
   text-decoration: underline;
 }
 
-.welcome-page {
-  max-width: 480px;
-  margin: 4rem auto;
-  padding: 2rem;
+.post-form {
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 12px;
-  text-align: center;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
 }
 
-.welcome-page h1 {
-  color: var(--accent);
+.post-form textarea {
+  width: 100%;
+  border: none;
+  resize: vertical;
+  font-size: 1rem;
+  font-family: inherit;
+  min-height: 3rem;
+}
+
+.post-form textarea:focus {
+  outline: none;
+}
+
+.post-form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.image-preview {
+  max-width: 100%;
+  max-height: 220px;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+  display: block;
+}
+
+.remove-image-btn {
+  background: none;
+  border: none;
+  color: var(--danger);
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+.post-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.post-card-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.post-author {
+  font-weight: bold;
+}
+
+.post-time {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.post-body {
+  white-space: pre-wrap;
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+}
+
+.post-actions {
+  display: flex;
+  align-items: center;
+  margin-top: 0.6rem;
+}
+
+.post-owner-menu {
+  margin-left: auto;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--muted);
+  padding: 2rem 1rem;
+}
+
+.edit-post-textarea {
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  margin-bottom: 0.6rem;
 }

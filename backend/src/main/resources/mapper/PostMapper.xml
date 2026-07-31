@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.snsapp.mapper.PostMapper">
+
+    <resultMap id="PostResultMap" type="com.snsapp.model.Post">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="username" column="username"/>
+        <result property="body" column="body"/>
+        <result property="imageUrl" column="image_url"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <sql id="selectWithAuthor">
+        SELECT posts.id, posts.user_id, users.username, posts.body, posts.image_url,
+               posts.created_at, posts.updated_at
+        FROM posts
+        JOIN users ON posts.user_id = users.id
+    </sql>
+
+    <insert id="insert" parameterType="com.snsapp.model.Post" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO posts (user_id, body, image_url)
+        VALUES (#{userId}, #{body}, #{imageUrl})
+    </insert>
+
+    <select id="findAllOrderByCreatedAtDesc" resultMap="PostResultMap">
+        <include refid="selectWithAuthor"/>
+        ORDER BY posts.created_at DESC
+    </select>
+
+    <select id="findById" resultMap="PostResultMap">
+        <include refid="selectWithAuthor"/>
+        WHERE posts.id = #{id}
+    </select>
+
+    <update id="update">
+        UPDATE posts
+        SET body = #{body}, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM posts WHERE id = #{id}
+    </delete>
+
+</mapper>

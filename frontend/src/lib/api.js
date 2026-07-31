@@ -155,3 +155,53 @@ export const auth = {
   getAccessToken,
   isLoggedIn: () => getAccessToken() !== null,
 }
+
+async function listPosts() {
+  const response = await authFetch('/api/posts')
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response))
+  }
+  return response.json()
+}
+
+async function createPost({ body, image }) {
+  const formData = new FormData()
+  formData.append('body', body)
+  if (image) {
+    formData.append('image', image)
+  }
+  const response = await authFetch('/api/posts', {
+    method: 'POST',
+    body: formData,
+  })
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response))
+  }
+  return response.json()
+}
+
+async function updatePost(id, { body }) {
+  const response = await authFetch(`/api/posts/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ body }),
+  })
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response))
+  }
+  return response.json()
+}
+
+async function deletePost(id) {
+  const response = await authFetch(`/api/posts/${id}`, { method: 'DELETE' })
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response))
+  }
+}
+
+export const posts = {
+  list: listPosts,
+  create: createPost,
+  update: updatePost,
+  remove: deletePost,
+}
