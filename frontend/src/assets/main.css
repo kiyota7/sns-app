@@ -68,6 +68,7 @@ button {
   padding: 0.35rem 0.9rem;
   font-weight: bold;
   color: var(--text);
+  text-decoration: none;
 }
 
 .page {
@@ -247,6 +248,12 @@ button {
 
 .post-author {
   font-weight: bold;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.post-author:hover {
+  text-decoration: underline;
 }
 
 .post-time {
@@ -342,5 +349,56 @@ button {
   font-size: 1rem;
   font-family: inherit;
   resize: vertical;
+  margin-bottom: 0.6rem;
+}
+
+.profile-header {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.profile-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: bold;
+  margin-bottom: 0.6rem;
+}
+
+.profile-username {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.profile-bio {
+  color: var(--muted);
+  margin: 0.4rem 0;
+}
+
+.profile-stats {
+  display: flex;
+  gap: 1.5rem;
+  margin: 0.6rem 0;
+  font-size: 0.9rem;
+}
+
+.profile-stats strong {
+  color: var(--text);
+}
+
+.profile-actions {
+  margin-top: 0.6rem;
+}
+
+.profile-edit-form .form-row {
   margin-bottom: 0.6rem;
 }

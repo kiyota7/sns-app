@@ -86,7 +86,7 @@ async function handleLogout() {
   <header class="app-header">
     <div class="app-header-title">(仮称)SNS</div>
     <nav class="app-header-nav">
-      <span class="user-chip">{{ user?.username }}</span>
+      <RouterLink class="user-chip" :to="`/users/${user?.id}`">{{ user?.username }}</RouterLink>
       <button type="button" class="btn btn-outline" @click="handleLogout">ログアウト</button>
     </nav>
   </header>

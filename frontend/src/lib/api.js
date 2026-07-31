@@ -248,3 +248,46 @@ export const comments = {
   list: listComments,
   create: createComment,
 }
+
+async function getProfile(id) {
+  const response = await authFetch(`/api/users/${id}`)
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response))
+  }
+  return response.json()
+}
+
+async function getUserPosts(id) {
+  const response = await authFetch(`/api/users/${id}/posts`)
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response))
+  }
+  return response.json()
+}
+
+async function updateProfile({ username, bio }) {
+  const response = await authFetch('/api/users/me', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, bio }),
+  })
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response))
+  }
+  return response.json()
+}
+
+async function toggleFollow(id) {
+  const response = await authFetch(`/api/users/${id}/follow`, { method: 'POST' })
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response))
+  }
+  return response.json()
+}
+
+export const users = {
+  getProfile,
+  getPosts: getUserPosts,
+  updateProfile,
+  toggleFollow,
+}

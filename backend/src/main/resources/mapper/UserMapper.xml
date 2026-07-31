@@ -31,4 +31,35 @@
         SELECT * FROM users WHERE id = #{id}
     </select>
 
+    <resultMap id="UserProfileResultMap" type="com.snsapp.model.UserProfile">
+        <id property="id" column="id"/>
+        <result property="username" column="username"/>
+        <result property="bio" column="bio"/>
+        <result property="followerCount" column="follower_count"/>
+        <result property="followingCount" column="following_count"/>
+        <result property="followedByCurrentUser" column="followed_by_current_user"/>
+    </resultMap>
+
+    <!--
+        フォロー数・フォロワー数・自分がフォロー済みかを、PostMapperのselectWithAuthorと同じ考え方で
+        相関サブクエリとして1本のSELECTに含めることでN+1を回避している。
+    -->
+    <select id="findProfileById" resultMap="UserProfileResultMap">
+        SELECT users.id, users.username, users.bio,
+               (SELECT COUNT(*) FROM follows WHERE followed_id = users.id) AS follower_count,
+               (SELECT COUNT(*) FROM follows WHERE follower_id = users.id) AS following_count,
+               EXISTS(
+                   SELECT 1 FROM follows
+                   WHERE follower_id = #{currentUserId} AND followed_id = users.id
+               ) AS followed_by_current_user
+        FROM users
+        WHERE users.id = #{id}
+    </select>
+
+    <update id="updateProfile">
+        UPDATE users
+        SET username = #{username}, bio = #{bio}, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+        WHERE id = #{id}
+    </update>
+
 </mapper>

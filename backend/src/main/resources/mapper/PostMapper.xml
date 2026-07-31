@@ -49,6 +49,12 @@
         WHERE posts.id = #{id}
     </select>
 
+    <select id="findByUserIdOrderByCreatedAtDesc" resultMap="PostResultMap">
+        <include refid="selectWithAuthor"/>
+        WHERE posts.user_id = #{userId}
+        ORDER BY posts.created_at DESC
+    </select>
+
     <update id="update">
         UPDATE posts
         SET body = #{body}, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')

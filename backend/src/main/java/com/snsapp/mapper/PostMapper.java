@@ -14,6 +14,8 @@ public interface PostMapper {
 
     List<Post> findAllOrderByCreatedAtDesc(@Param("currentUserId") Long currentUserId);
 
+    List<Post> findByUserIdOrderByCreatedAtDesc(@Param("userId") Long userId, @Param("currentUserId") Long currentUserId);
+
     Optional<Post> findById(@Param("id") Long id, @Param("currentUserId") Long currentUserId);
 
     void update(@Param("id") Long id, @Param("body") String body);
