@@ -7,6 +7,7 @@
   --accent: #1da1f2;
   --accent-dark: #0d8ecf;
   --danger: #e0245e;
+  --like: #e0245e;
 }
 
 * {
@@ -262,7 +263,27 @@ button {
 .post-actions {
   display: flex;
   align-items: center;
+  gap: 1.5rem;
   margin-top: 0.6rem;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  text-decoration: none;
+}
+
+.action-btn:hover {
+  color: var(--accent);
+}
+
+.action-btn.liked {
+  color: var(--like);
 }
 
 .post-owner-menu {
@@ -275,6 +296,42 @@ button {
   text-align: center;
   color: var(--muted);
   padding: 2rem 1rem;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 1rem;
+  color: var(--accent);
+  background: none;
+  border: none;
+  font-size: 0.95rem;
+}
+
+.comment-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.comment-form input {
+  flex: 1;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.comment-item {
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.comment-item:last-child {
+  border-bottom: none;
+}
+
+.comment-author {
+  font-weight: bold;
+  margin-right: 0.4rem;
 }
 
 .edit-post-textarea {

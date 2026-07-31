@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { auth, posts, AuthExpiredError } from '../lib/api'
+import PostCard from '../components/PostCard.vue'
 
 const router = useRouter()
 const user = ref(auth.getUser())
@@ -14,9 +15,6 @@ const composeImageFile = ref(null)
 const composeImagePreview = ref('')
 const composeSubmitting = ref(false)
 const fileInput = ref(null)
-
-const editingPostId = ref(null)
-const editBody = ref('')
 
 onMounted(async () => {
   try {
@@ -31,12 +29,6 @@ onMounted(async () => {
     loading.value = false
   }
 })
-
-function formatTime(isoString) {
-  const date = new Date(isoString)
-  const pad = (n) => String(n).padStart(2, '0')
-  return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
-}
 
 function handleImageChange(event) {
   const file = event.target.files[0]
@@ -73,39 +65,15 @@ async function handleCompose() {
   }
 }
 
-function startEdit(post) {
-  editingPostId.value = post.id
-  editBody.value = post.body
-}
-
-function cancelEdit() {
-  editingPostId.value = null
-}
-
-async function saveEdit(post) {
-  if (!editBody.value.trim()) return
-  errorMessage.value = ''
-  try {
-    const updated = await posts.update(post.id, { body: editBody.value })
-    const index = postList.value.findIndex((p) => p.id === post.id)
-    if (index !== -1) {
-      postList.value[index] = updated
-    }
-    editingPostId.value = null
-  } catch (error) {
-    errorMessage.value = error.message
+function handlePostUpdated(updated) {
+  const index = postList.value.findIndex((p) => p.id === updated.id)
+  if (index !== -1) {
+    postList.value[index] = updated
   }
 }
 
-async function handleDelete(post) {
-  if (!confirm('この投稿を削除しますか?')) return
-  errorMessage.value = ''
-  try {
-    await posts.remove(post.id)
-    postList.value = postList.value.filter((p) => p.id !== post.id)
-  } catch (error) {
-    errorMessage.value = error.message
-  }
+function handlePostDeleted(postId) {
+  postList.value = postList.value.filter((p) => p.id !== postId)
 }
 
 async function handleLogout() {
@@ -144,35 +112,15 @@ async function handleLogout() {
     <p v-if="loading">読み込み中...</p>
     <div v-else-if="postList.length === 0" class="empty-state">まだ投稿がありません。</div>
     <template v-else>
-      <article v-for="post in postList" :key="post.id" class="post-card">
-        <template v-if="editingPostId === post.id">
-          <div class="post-card-header">
-            <span class="post-author">{{ post.username }}</span>
-            <span class="post-time">{{ formatTime(post.createdAt) }}</span>
-          </div>
-          <textarea class="edit-post-textarea" v-model="editBody" rows="3"></textarea>
-          <div class="post-actions">
-            <button type="button" class="btn btn-small" @click="cancelEdit">キャンセル</button>
-            <button type="button" class="btn btn-small btn-outline" @click="saveEdit(post)">保存</button>
-          </div>
-        </template>
-        <template v-else>
-          <div class="post-card-header">
-            <span class="post-author">{{ post.username }}</span>
-            <span class="post-time"
-              >・{{ formatTime(post.createdAt) }}{{ post.updatedAt !== post.createdAt ? '(編集済み)' : '' }}</span
-            >
-          </div>
-          <div class="post-body">{{ post.body }}</div>
-          <img v-if="post.imageUrl" class="image-preview" :src="post.imageUrl" alt="投稿画像" />
-          <div v-if="post.userId === user?.id" class="post-actions">
-            <span class="post-owner-menu">
-              <button type="button" class="btn btn-small" @click="startEdit(post)">編集</button>
-              <button type="button" class="btn btn-small btn-danger" @click="handleDelete(post)">削除</button>
-            </span>
-          </div>
-        </template>
-      </article>
+      <PostCard
+        v-for="post in postList"
+        :key="post.id"
+        :post="post"
+        :current-user="user"
+        @updated="handlePostUpdated"
+        @deleted="handlePostDeleted"
+        @error="errorMessage = $event"
+      />
     </template>
   </div>
 </template>

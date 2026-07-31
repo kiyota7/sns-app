@@ -1,5 +1,6 @@
 package com.snsapp.controller;
 
+import com.snsapp.dto.LikeResponse;
 import com.snsapp.dto.PostResponse;
 import com.snsapp.dto.UpdatePostRequest;
 import com.snsapp.security.AuthenticatedUser;
@@ -25,8 +26,16 @@ public class PostController {
     }
 
     @GetMapping
-    public ResponseEntity<List<PostResponse>> list() {
-        return ResponseEntity.ok(postService.list());
+    public ResponseEntity<List<PostResponse>> list(@AuthenticationPrincipal AuthenticatedUser principal) {
+        return ResponseEntity.ok(postService.list(principal.id()));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<PostResponse> getById(
+            @AuthenticationPrincipal AuthenticatedUser principal,
+            @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(postService.getById(id, principal.id()));
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -54,5 +63,13 @@ public class PostController {
     ) {
         postService.delete(id, principal.id());
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/likes")
+    public ResponseEntity<LikeResponse> toggleLike(
+            @AuthenticationPrincipal AuthenticatedUser principal,
+            @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(postService.toggleLike(id, principal.id()));
     }
 }

@@ -1,0 +1,99 @@
+<script setup>
+import { ref } from 'vue'
+import { posts } from '../lib/api'
+import { formatTime } from '../lib/format'
+
+const props = defineProps({
+  post: { type: Object, required: true },
+  currentUser: { type: Object, default: null },
+})
+
+const emit = defineEmits(['updated', 'deleted', 'error'])
+
+const editing = ref(false)
+const editBody = ref('')
+
+const liked = ref(props.post.liked)
+const likeCount = ref(props.post.likeCount)
+const likeSubmitting = ref(false)
+
+async function toggleLike() {
+  if (likeSubmitting.value) return
+  likeSubmitting.value = true
+  try {
+    const result = await posts.toggleLike(props.post.id)
+    liked.value = result.liked
+    likeCount.value = result.likeCount
+  } catch (error) {
+    emit('error', error.message)
+  } finally {
+    likeSubmitting.value = false
+  }
+}
+
+function startEdit() {
+  editBody.value = props.post.body
+  editing.value = true
+}
+
+function cancelEdit() {
+  editing.value = false
+}
+
+async function saveEdit() {
+  if (!editBody.value.trim()) return
+  try {
+    const updated = await posts.update(props.post.id, { body: editBody.value })
+    emit('updated', updated)
+    editing.value = false
+  } catch (error) {
+    emit('error', error.message)
+  }
+}
+
+async function handleDelete() {
+  if (!confirm('この投稿を削除しますか?')) return
+  try {
+    await posts.remove(props.post.id)
+    emit('deleted', props.post.id)
+  } catch (error) {
+    emit('error', error.message)
+  }
+}
+</script>
+
+<template>
+  <article class="post-card">
+    <template v-if="editing">
+      <div class="post-card-header">
+        <span class="post-author">{{ post.username }}</span>
+        <span class="post-time">{{ formatTime(post.createdAt) }}</span>
+      </div>
+      <textarea class="edit-post-textarea" v-model="editBody" rows="3"></textarea>
+      <div class="post-actions">
+        <button type="button" class="btn btn-small" @click="cancelEdit">キャンセル</button>
+        <button type="button" class="btn btn-small btn-outline" @click="saveEdit">保存</button>
+      </div>
+    </template>
+    <template v-else>
+      <div class="post-card-header">
+        <span class="post-author">{{ post.username }}</span>
+        <span class="post-time"
+          >・{{ formatTime(post.createdAt) }}{{ post.updatedAt !== post.createdAt ? '(編集済み)' : '' }}</span
+        >
+      </div>
+      <div class="post-body">{{ post.body }}</div>
+      <img v-if="post.imageUrl" class="image-preview" :src="post.imageUrl" alt="投稿画像" />
+      <div class="post-actions">
+        <button type="button" class="action-btn" :class="{ liked }" :disabled="likeSubmitting" @click="toggleLike">
+          {{ liked ? '♥' : '♡' }} {{ likeCount }}
+        </button>
+        <RouterLink class="action-btn" :to="`/posts/${post.id}`">💬 {{ post.commentCount }}</RouterLink>
+        <span v-if="post.userId === currentUser?.id" class="post-owner-menu">
+          <button type="button" class="btn btn-small" @click="startEdit">編集</button>
+          <button type="button" class="btn btn-small btn-danger" @click="handleDelete">削除</button>
+        </span>
+      </div>
+    </template>
+  </article>
+</template>
