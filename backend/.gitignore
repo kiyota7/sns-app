@@ -1,5 +1,6 @@
 target/
 sns.db
+uploads/
 .mvn/wrapper/maven-wrapper.jar
 
 ### STS ###

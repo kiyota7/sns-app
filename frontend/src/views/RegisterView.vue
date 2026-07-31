@@ -15,7 +15,7 @@ async function handleSubmit() {
   submitting.value = true
   try {
     await auth.register({ username: username.value, email: email.value, password: password.value })
-    router.push({ name: 'welcome' })
+    router.push({ name: 'timeline' })
   } catch (error) {
     errorMessage.value = error.message
   } finally {
