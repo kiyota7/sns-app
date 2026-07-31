@@ -55,6 +55,12 @@
         ORDER BY posts.created_at DESC
     </select>
 
+    <select id="findFollowingOrderByCreatedAtDesc" resultMap="PostResultMap">
+        <include refid="selectWithAuthor"/>
+        JOIN follows ON follows.followed_id = posts.user_id AND follows.follower_id = #{currentUserId}
+        ORDER BY posts.created_at DESC
+    </select>
+
     <update id="update">
         UPDATE posts
         SET body = #{body}, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')

@@ -26,7 +26,13 @@ public class PostController {
     }
 
     @GetMapping
-    public ResponseEntity<List<PostResponse>> list(@AuthenticationPrincipal AuthenticatedUser principal) {
+    public ResponseEntity<List<PostResponse>> list(
+            @AuthenticationPrincipal AuthenticatedUser principal,
+            @RequestParam(defaultValue = "all") String scope
+    ) {
+        if ("following".equals(scope)) {
+            return ResponseEntity.ok(postService.listFollowing(principal.id()));
+        }
         return ResponseEntity.ok(postService.list(principal.id()));
     }
 

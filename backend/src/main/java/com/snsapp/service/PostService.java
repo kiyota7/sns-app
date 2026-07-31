@@ -46,6 +46,12 @@ public class PostService {
                 .collect(Collectors.toList());
     }
 
+    public List<PostResponse> listFollowing(Long currentUserId) {
+        return postMapper.findFollowingOrderByCreatedAtDesc(currentUserId).stream()
+                .map(PostResponse::from)
+                .collect(Collectors.toList());
+    }
+
     public PostResponse getById(Long postId, Long currentUserId) {
         return PostResponse.from(findByIdOrThrow(postId, currentUserId));
     }
