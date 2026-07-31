@@ -12,11 +12,24 @@
         <result property="imageUrl" column="image_url"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
+        <result property="likeCount" column="like_count"/>
+        <result property="commentCount" column="comment_count"/>
+        <result property="likedByCurrentUser" column="liked_by_current_user"/>
     </resultMap>
 
+    <!--
+        いいね数・コメント数・自分がいいね済みかを、投稿ごとに追加クエリを発行するのではなく
+        相関サブクエリとして1本のSELECTに含めることでN+1を回避している。
+    -->
     <sql id="selectWithAuthor">
         SELECT posts.id, posts.user_id, users.username, posts.body, posts.image_url,
-               posts.created_at, posts.updated_at
+               posts.created_at, posts.updated_at,
+               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
+               (SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id) AS comment_count,
+               EXISTS(
+                   SELECT 1 FROM likes
+                   WHERE likes.post_id = posts.id AND likes.user_id = #{currentUserId}
+               ) AS liked_by_current_user
         FROM posts
         JOIN users ON posts.user_id = users.id
     </sql>

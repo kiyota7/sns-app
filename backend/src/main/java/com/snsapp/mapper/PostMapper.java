@@ -12,9 +12,9 @@ public interface PostMapper {
 
     void insert(Post post);
 
-    List<Post> findAllOrderByCreatedAtDesc();
+    List<Post> findAllOrderByCreatedAtDesc(@Param("currentUserId") Long currentUserId);
 
-    Optional<Post> findById(@Param("id") Long id);
+    Optional<Post> findById(@Param("id") Long id, @Param("currentUserId") Long currentUserId);
 
     void update(@Param("id") Long id, @Param("body") String body);
 

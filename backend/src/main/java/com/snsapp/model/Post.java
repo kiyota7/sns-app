@@ -9,6 +9,9 @@ public class Post {
     private String imageUrl;
     private String createdAt;
     private String updatedAt;
+    private int likeCount;
+    private int commentCount;
+    private boolean likedByCurrentUser;
 
     public Long getId() {
         return id;
@@ -64,5 +67,29 @@ public class Post {
 
     public void setUpdatedAt(String updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public int getLikeCount() {
+        return likeCount;
+    }
+
+    public void setLikeCount(int likeCount) {
+        this.likeCount = likeCount;
+    }
+
+    public int getCommentCount() {
+        return commentCount;
+    }
+
+    public void setCommentCount(int commentCount) {
+        this.commentCount = commentCount;
+    }
+
+    public boolean isLikedByCurrentUser() {
+        return likedByCurrentUser;
+    }
+
+    public void setLikedByCurrentUser(boolean likedByCurrentUser) {
+        this.likedByCurrentUser = likedByCurrentUser;
     }
 }

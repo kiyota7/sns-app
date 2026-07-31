@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.snsapp.mapper.CommentMapper">
+
+    <resultMap id="CommentResultMap" type="com.snsapp.model.Comment">
+        <id property="id" column="id"/>
+        <result property="postId" column="post_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="username" column="username"/>
+        <result property="body" column="body"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <sql id="selectWithAuthor">
+        SELECT comments.id, comments.post_id, comments.user_id, users.username,
+               comments.body, comments.created_at
+        FROM comments
+        JOIN users ON comments.user_id = users.id
+    </sql>
+
+    <insert id="insert" parameterType="com.snsapp.model.Comment" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO comments (post_id, user_id, body)
+        VALUES (#{postId}, #{userId}, #{body})
+    </insert>
+
+    <select id="findById" resultMap="CommentResultMap">
+        <include refid="selectWithAuthor"/>
+        WHERE comments.id = #{id}
+    </select>
+
+    <select id="findByPostIdOrderByCreatedAtDesc" resultMap="CommentResultMap">
+        <include refid="selectWithAuthor"/>
+        WHERE comments.post_id = #{postId}
+        ORDER BY comments.created_at DESC
+    </select>
+
+    <delete id="deleteByPostId">
+        DELETE FROM comments WHERE post_id = #{postId}
+    </delete>
+
+</mapper>

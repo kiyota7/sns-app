@@ -199,9 +199,52 @@ async function deletePost(id) {
   }
 }
 
+async function getPostById(id) {
+  const response = await authFetch(`/api/posts/${id}`)
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response))
+  }
+  return response.json()
+}
+
+async function toggleLike(id) {
+  const response = await authFetch(`/api/posts/${id}/likes`, { method: 'POST' })
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response))
+  }
+  return response.json()
+}
+
 export const posts = {
   list: listPosts,
   create: createPost,
   update: updatePost,
   remove: deletePost,
+  getById: getPostById,
+  toggleLike,
+}
+
+async function listComments(postId) {
+  const response = await authFetch(`/api/posts/${postId}/comments`)
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response))
+  }
+  return response.json()
+}
+
+async function createComment(postId, { body }) {
+  const response = await authFetch(`/api/posts/${postId}/comments`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ body }),
+  })
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response))
+  }
+  return response.json()
+}
+
+export const comments = {
+  list: listComments,
+  create: createComment,
 }

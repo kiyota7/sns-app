@@ -20,6 +20,12 @@ const router = createRouter({
       component: () => import('../views/TimelineView.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/posts/:id',
+      name: 'post-detail',
+      component: () => import('../views/PostDetailView.vue'),
+      meta: { requiresAuth: true },
+    },
   ],
 })
 

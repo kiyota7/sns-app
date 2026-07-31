@@ -9,7 +9,10 @@ public record PostResponse(
         String body,
         String imageUrl,
         String createdAt,
-        String updatedAt
+        String updatedAt,
+        int likeCount,
+        int commentCount,
+        boolean liked
 ) {
 
     public static PostResponse from(Post post) {
@@ -20,7 +23,10 @@ public record PostResponse(
                 post.getBody(),
                 post.getImageUrl(),
                 post.getCreatedAt(),
-                post.getUpdatedAt()
+                post.getUpdatedAt(),
+                post.getLikeCount(),
+                post.getCommentCount(),
+                post.isLikedByCurrentUser()
         );
     }
 }
