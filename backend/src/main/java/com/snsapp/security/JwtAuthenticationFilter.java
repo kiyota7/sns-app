@@ -39,8 +39,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 Claims claims = jwtService.parseClaims(token);
                 String jti = claims.getId();
+                boolean isAccessToken = JwtService.TYPE_ACCESS.equals(claims.get("type"));
 
-                if (!tokenBlacklistMapper.existsByJti(jti)) {
+                if (isAccessToken && !tokenBlacklistMapper.existsByJti(jti)) {
                     Long userId = ((Number) claims.get("userId")).longValue();
                     String username = claims.getSubject();
                     AuthenticatedUser principal = new AuthenticatedUser(userId, username);
@@ -48,7 +49,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     var authentication = new UsernamePasswordAuthenticationToken(principal, null, java.util.List.of());
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
-                // blacklist登録済み(ログアウト済み)の場合は認証を設定せず、未認証のまま後続処理へ進む
+                // リフレッシュトークンが渡された場合、およびblacklist登録済み(ログアウト済み)の
+                // アクセストークンの場合は認証を設定せず、未認証のまま後続処理へ進む
             } catch (JwtException | IllegalArgumentException e) {
                 // 署名不正・期限切れ等はそのまま未認証として扱う(401はSecurityConfig側のentry pointが返す)
             }
