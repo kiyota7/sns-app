@@ -112,8 +112,10 @@ blacklistに登録することで、以降使えなくする。
 
 `POST /api/posts`(`multipart/form-data`。本文+画像は任意)・`GET /api/posts`(全体タイムライン、
 新しい順)・`GET /api/posts/{id}`・`PUT /api/posts/{id}`・`DELETE /api/posts/{id}`(編集・削除は
-本人の投稿のみ、他人の投稿への操作は403)。添付画像はS3等を使わず`backend/uploads/`にローカル保存し、
-`/uploads/**`で静的配信する(認証不要でアクセス可能)。
+本人の投稿のみ、他人の投稿への操作は403)。添付画像の保存先は`ImageStorageService`インターフェース
+で抽象化しており、ローカル実行時は`backend/uploads/`にローカル保存して`/uploads/**`で静的配信(認証不要)、
+本番(AWS)ではS3バケットに保存し、S3の公開URLをそのまま返す(いずれも認証不要でアクセス可能な点は同じ。
+詳細は[インフラ構成](docs/インフラ構成.md)を参照)。
 
 - `POST /api/posts/{id}/likes`: いいねのトグル(登録済みなら解除)。`{liked, likeCount}`を返す
 - `GET /api/posts/{postId}/comments`・`POST /api/posts/{postId}/comments`: コメント一覧(新しい順)・投稿
@@ -174,7 +176,7 @@ npm run dev
 ├── mock/            # HTML/CSS/JSのみのプロトタイプMock(DB・サーバーなし)
 ├── backend/         # Spring Boot(MyBatis, SQLite, JWT認証)バックエンド + Dockerfile
 ├── frontend/        # Vue.js(Vite)フロントエンド + Dockerfile・nginx.conf
-├── terraform/       # AWSインフラのコード化(EC2・ネットワーク・IAM。RDSはなし)
+├── terraform/       # AWSインフラのコード化(EC2・ネットワーク・IAM・S3。RDSはなし)
 ├── scripts/deploy.sh # SSM経由の再デプロイスクリプト
 ├── docker-compose.prod.yml # 本番環境でのコンテナ起動定義
 └── .claude/skills/  # 開発支援スキル(タスクボードプロジェクトから流用)
@@ -191,6 +193,7 @@ npm run dev
 - [x] フォロー・フォロー解除、プロフィール表示/編集(F-14, F-15)
 - [x] フォロー中タイムライン(F-08)・ユーザー検索(F-13)
 - [x] AWSデプロイ構成(Terraform、EC2 + SSM。RDSは使わずSQLiteをEC2ローカルで永続化)
+- [x] 投稿画像の保存先をS3に移行(EC2ローカル保存から切り替え。IAMインスタンスプロファイル経由でアクセス)
 
 ## 開発ワークフロー
 

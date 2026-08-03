@@ -35,9 +35,12 @@ fi
 # docker-compose.prod.ymlが ./data をマウントする。git pullでは削除されない。
 mkdir -p /opt/app/data
 
-# --- .env の生成(JWT署名シークレット。リポジトリにコミットしない) ---
+# --- .env の生成(JWT署名シークレット・S3設定。リポジトリにコミットしない) ---
 cat > /opt/app/.env <<EOF
 JWT_SECRET=${jwt_secret}
+APP_STORAGE_TYPE=s3
+AWS_S3_BUCKET=${s3_bucket_name}
+AWS_REGION=${aws_region}
 EOF
 chmod 600 /opt/app/.env
 

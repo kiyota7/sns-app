@@ -7,6 +7,9 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       SPRING_DATASOURCE_URL: jdbc:sqlite:/app/data/sns.db
       APP_UPLOAD_DIR: /app/data/uploads
+      APP_STORAGE_TYPE: ${APP_STORAGE_TYPE:-local}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
+      AWS_REGION: ${AWS_REGION:-ap-northeast-1}
     volumes:
       - ./data:/app/data
 

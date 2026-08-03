@@ -8,16 +8,11 @@ import com.snsapp.mapper.CommentMapper;
 import com.snsapp.mapper.LikeMapper;
 import com.snsapp.mapper.PostMapper;
 import com.snsapp.model.Post;
-import org.springframework.beans.factory.annotation.Value;
+import com.snsapp.storage.ImageStorageService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,18 +21,18 @@ public class PostService {
     private final PostMapper postMapper;
     private final CommentMapper commentMapper;
     private final LikeMapper likeMapper;
-    private final Path uploadDir;
+    private final ImageStorageService imageStorageService;
 
     public PostService(
             PostMapper postMapper,
             CommentMapper commentMapper,
             LikeMapper likeMapper,
-            @Value("${app.upload.dir}") String uploadDir
+            ImageStorageService imageStorageService
     ) {
         this.postMapper = postMapper;
         this.commentMapper = commentMapper;
         this.likeMapper = likeMapper;
-        this.uploadDir = Path.of(uploadDir).toAbsolutePath();
+        this.imageStorageService = imageStorageService;
     }
 
     public List<PostResponse> list(Long currentUserId) {
@@ -60,7 +55,7 @@ public class PostService {
         Post post = new Post();
         post.setUserId(userId);
         post.setBody(body);
-        post.setImageUrl(image != null && !image.isEmpty() ? saveImage(image) : null);
+        post.setImageUrl(image != null && !image.isEmpty() ? imageStorageService.store(image) : null);
 
         postMapper.insert(post);
 
@@ -106,24 +101,5 @@ public class PostService {
         if (!post.getUserId().equals(requesterId)) {
             throw new ForbiddenPostAccessException("自分以外の投稿は操作できません。");
         }
-    }
-
-    private String saveImage(MultipartFile image) {
-        try {
-            Files.createDirectories(uploadDir);
-            String filename = UUID.randomUUID() + extractExtension(image.getOriginalFilename());
-            Files.copy(image.getInputStream(), uploadDir.resolve(filename));
-            return "/uploads/" + filename;
-        } catch (IOException e) {
-            throw new UncheckedIOException("画像の保存に失敗しました。", e);
-        }
-    }
-
-    private String extractExtension(String originalFilename) {
-        if (originalFilename == null) {
-            return "";
-        }
-        int dotIndex = originalFilename.lastIndexOf('.');
-        return dotIndex >= 0 ? originalFilename.substring(dotIndex) : "";
     }
 }
