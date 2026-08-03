@@ -10,6 +10,7 @@
         <result property="email" column="email"/>
         <result property="passwordHash" column="password_hash"/>
         <result property="bio" column="bio"/>
+        <result property="avatarUrl" column="avatar_url"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
     </resultMap>
@@ -35,6 +36,7 @@
         <id property="id" column="id"/>
         <result property="username" column="username"/>
         <result property="bio" column="bio"/>
+        <result property="avatarUrl" column="avatar_url"/>
         <result property="followerCount" column="follower_count"/>
         <result property="followingCount" column="following_count"/>
         <result property="followedByCurrentUser" column="followed_by_current_user"/>
@@ -45,7 +47,7 @@
         相関サブクエリとして1本のSELECTに含めることでN+1を回避している。
     -->
     <select id="findProfileById" resultMap="UserProfileResultMap">
-        SELECT users.id, users.username, users.bio,
+        SELECT users.id, users.username, users.bio, users.avatar_url,
                (SELECT COUNT(*) FROM follows WHERE followed_id = users.id) AS follower_count,
                (SELECT COUNT(*) FROM follows WHERE follower_id = users.id) AS following_count,
                EXISTS(
@@ -56,9 +58,15 @@
         WHERE users.id = #{id}
     </select>
 
+    <!-- avatarUrlが指定されなかった場合(アイコン画像を変更しない編集)は既存の値を保持する -->
     <update id="updateProfile">
         UPDATE users
-        SET username = #{username}, bio = #{bio}, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+        <set>
+            username = #{username},
+            bio = #{bio},
+            <if test="avatarUrl != null">avatar_url = #{avatarUrl},</if>
+            updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+        </set>
         WHERE id = #{id}
     </update>
 
