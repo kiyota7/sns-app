@@ -23,6 +23,8 @@ resource "aws_instance" "app" {
     repo_clone_url = replace(var.repo_url, "https://", "https://x-access-token:${var.github_pat}@")
     repo_branch    = var.repo_branch
     jwt_secret     = var.jwt_secret
+    s3_bucket_name = aws_s3_bucket.uploads.bucket
+    aws_region     = var.aws_region
   })
 
   tags = {
