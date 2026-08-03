@@ -11,7 +11,9 @@ import com.snsapp.mapper.FollowMapper;
 import com.snsapp.mapper.PostMapper;
 import com.snsapp.mapper.UserMapper;
 import com.snsapp.model.UserProfile;
+import com.snsapp.storage.ImageStorageService;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,11 +24,18 @@ public class UserService {
     private final UserMapper userMapper;
     private final PostMapper postMapper;
     private final FollowMapper followMapper;
+    private final ImageStorageService imageStorageService;
 
-    public UserService(UserMapper userMapper, PostMapper postMapper, FollowMapper followMapper) {
+    public UserService(
+            UserMapper userMapper,
+            PostMapper postMapper,
+            FollowMapper followMapper,
+            ImageStorageService imageStorageService
+    ) {
         this.userMapper = userMapper;
         this.postMapper = postMapper;
         this.followMapper = followMapper;
+        this.imageStorageService = imageStorageService;
     }
 
     public ProfileResponse getProfile(Long userId, Long currentUserId) {
@@ -39,14 +48,15 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
-    public ProfileResponse updateProfile(Long userId, String username, String bio) {
+    public ProfileResponse updateProfile(Long userId, String username, String bio, MultipartFile avatar) {
         userMapper.findByUsername(username)
                 .filter(existing -> !existing.getId().equals(userId))
                 .ifPresent(existing -> {
                     throw new DuplicateUserException("そのユーザー名は既に使われています。");
                 });
 
-        userMapper.updateProfile(userId, username, bio);
+        String avatarUrl = (avatar != null && !avatar.isEmpty()) ? imageStorageService.store(avatar) : null;
+        userMapper.updateProfile(userId, username, bio, avatarUrl);
 
         return ProfileResponse.from(findProfileOrThrow(userId, userId));
     }

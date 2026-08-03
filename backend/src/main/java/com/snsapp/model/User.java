@@ -7,6 +7,7 @@ public class User {
     private String email;
     private String passwordHash;
     private String bio;
+    private String avatarUrl;
     private String createdAt;
     private String updatedAt;
 
@@ -48,6 +49,14 @@ public class User {
 
     public void setBio(String bio) {
         this.bio = bio;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
     }
 
     public String getCreatedAt() {

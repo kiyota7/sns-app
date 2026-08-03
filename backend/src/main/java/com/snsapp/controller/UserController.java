@@ -3,19 +3,23 @@ package com.snsapp.controller;
 import com.snsapp.dto.FollowResponse;
 import com.snsapp.dto.PostResponse;
 import com.snsapp.dto.ProfileResponse;
-import com.snsapp.dto.UpdateProfileRequest;
 import com.snsapp.dto.UserSearchResponse;
 import com.snsapp.security.AuthenticatedUser;
 import com.snsapp.service.UserService;
-import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
+@Validated
 public class UserController {
 
     private final UserService userService;
@@ -48,12 +52,14 @@ public class UserController {
         return ResponseEntity.ok(userService.getPosts(id, principal.id()));
     }
 
-    @PutMapping("/me")
+    @PutMapping(value = "/me", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ProfileResponse> updateProfile(
             @AuthenticationPrincipal AuthenticatedUser principal,
-            @Valid @RequestBody UpdateProfileRequest request
+            @RequestParam @NotBlank @Size(max = 50) String username,
+            @RequestParam(required = false) @Size(max = 160) String bio,
+            @RequestParam(value = "avatar", required = false) MultipartFile avatar
     ) {
-        return ResponseEntity.ok(userService.updateProfile(principal.id(), request.getUsername(), request.getBio()));
+        return ResponseEntity.ok(userService.updateProfile(principal.id(), username, bio, avatar));
     }
 
     @PostMapping("/{id}/follow")

@@ -6,6 +6,7 @@ public record ProfileResponse(
         Long id,
         String username,
         String bio,
+        String avatarUrl,
         int followerCount,
         int followingCount,
         boolean following
@@ -16,6 +17,7 @@ public record ProfileResponse(
                 profile.getId(),
                 profile.getUsername(),
                 profile.getBio(),
+                profile.getAvatarUrl(),
                 profile.getFollowerCount(),
                 profile.getFollowingCount(),
                 profile.isFollowedByCurrentUser()

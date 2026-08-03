@@ -15,7 +15,10 @@ const errorMessage = ref('')
 const editing = ref(false)
 const editUsername = ref('')
 const editBio = ref('')
+const editAvatarFile = ref(null)
+const editAvatarPreview = ref('')
 const editSubmitting = ref(false)
+const avatarFileInput = ref(null)
 
 const followSubmitting = ref(false)
 
@@ -49,6 +52,8 @@ function handleBack() {
 function startEdit() {
   editUsername.value = profile.value.username
   editBio.value = profile.value.bio || ''
+  editAvatarFile.value = null
+  editAvatarPreview.value = ''
   editing.value = true
 }
 
@@ -56,12 +61,35 @@ function cancelEdit() {
   editing.value = false
 }
 
+function handleAvatarChange(event) {
+  const file = event.target.files[0]
+  if (!file) return
+  editAvatarFile.value = file
+  const reader = new FileReader()
+  reader.onload = () => {
+    editAvatarPreview.value = reader.result
+  }
+  reader.readAsDataURL(file)
+}
+
+function removeAvatarSelection() {
+  editAvatarFile.value = null
+  editAvatarPreview.value = ''
+  if (avatarFileInput.value) {
+    avatarFileInput.value.value = ''
+  }
+}
+
 async function saveEdit() {
   if (!editUsername.value.trim()) return
   errorMessage.value = ''
   editSubmitting.value = true
   try {
-    const updated = await users.updateProfile({ username: editUsername.value, bio: editBio.value })
+    const updated = await users.updateProfile({
+      username: editUsername.value,
+      bio: editBio.value,
+      avatar: editAvatarFile.value,
+    })
     profile.value = updated
     editing.value = false
     await auth.me()
@@ -125,9 +153,32 @@ async function handleLogout() {
     <p v-else-if="loading">読み込み中...</p>
     <template v-else-if="profile">
       <div class="profile-header">
-        <div class="profile-avatar">{{ avatarInitial(profile.username) }}</div>
+        <img v-if="!editing && profile.avatarUrl" class="profile-avatar" :src="profile.avatarUrl" alt="アイコン画像" />
+        <div v-else-if="!editing" class="profile-avatar">{{ avatarInitial(profile.username) }}</div>
 
         <form v-if="editing" class="profile-edit-form" @submit.prevent="saveEdit">
+          <div class="form-row">
+            <img
+              v-if="editAvatarPreview || profile.avatarUrl"
+              class="profile-avatar"
+              :src="editAvatarPreview || profile.avatarUrl"
+              alt="アイコン画像"
+            />
+            <div v-else class="profile-avatar">{{ avatarInitial(profile.username) }}</div>
+            <label class="btn btn-small btn-outline" style="cursor: pointer">
+              画像を選択
+              <input
+                ref="avatarFileInput"
+                type="file"
+                accept="image/*"
+                style="display: none"
+                @change="handleAvatarChange"
+              />
+            </label>
+            <button v-if="editAvatarPreview" type="button" class="remove-image-btn" @click="removeAvatarSelection">
+              選択を解除
+            </button>
+          </div>
           <div class="form-row">
             <label for="edit-username">ユーザー名</label>
             <input id="edit-username" v-model="editUsername" type="text" required maxlength="50" />

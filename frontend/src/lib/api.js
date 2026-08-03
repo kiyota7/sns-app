@@ -266,11 +266,16 @@ async function getUserPosts(id) {
   return response.json()
 }
 
-async function updateProfile({ username, bio }) {
+async function updateProfile({ username, bio, avatar }) {
+  const formData = new FormData()
+  formData.append('username', username)
+  formData.append('bio', bio ?? '')
+  if (avatar) {
+    formData.append('avatar', avatar)
+  }
   const response = await authFetch('/api/users/me', {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, bio }),
+    body: formData,
   })
   if (!response.ok) {
     throw new Error(await parseErrorMessage(response))

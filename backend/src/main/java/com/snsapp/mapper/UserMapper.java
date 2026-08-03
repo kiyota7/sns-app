@@ -22,7 +22,12 @@ public interface UserMapper {
 
     Optional<UserProfile> findProfileById(@Param("id") Long id, @Param("currentUserId") Long currentUserId);
 
-    void updateProfile(@Param("id") Long id, @Param("username") String username, @Param("bio") String bio);
+    void updateProfile(
+            @Param("id") Long id,
+            @Param("username") String username,
+            @Param("bio") String bio,
+            @Param("avatarUrl") String avatarUrl
+    );
 
     List<UserSearchResult> search(@Param("query") String query, @Param("currentUserId") Long currentUserId);
 }

@@ -5,6 +5,7 @@ public class UserProfile {
     private Long id;
     private String username;
     private String bio;
+    private String avatarUrl;
     private int followerCount;
     private int followingCount;
     private boolean followedByCurrentUser;
@@ -31,6 +32,14 @@ public class UserProfile {
 
     public void setBio(String bio) {
         this.bio = bio;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
     }
 
     public int getFollowerCount() {
