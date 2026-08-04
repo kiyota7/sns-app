@@ -5,7 +5,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
-import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
@@ -15,6 +14,8 @@ import java.util.UUID;
 
 /**
  * EC2のIAMインスタンスプロファイル経由でS3にアクセスする(アクセスキーの発行・管理は不要)。
+ * S3Clientはコンストラクタインジェクション(S3ClientConfig参照)にすることで、
+ * 単体テストではモックに差し替えられるようにしている。
  */
 @Service
 @ConditionalOnProperty(name = "app.storage.type", havingValue = "s3")
@@ -25,14 +26,13 @@ public class S3ImageStorageService implements ImageStorageService {
     private final String publicUrlPrefix;
 
     public S3ImageStorageService(
+            S3Client s3Client,
             @Value("${app.storage.s3.bucket}") String bucket,
             @Value("${app.storage.s3.region}") String region
     ) {
+        this.s3Client = s3Client;
         this.bucket = bucket;
         this.publicUrlPrefix = "https://" + bucket + ".s3." + region + ".amazonaws.com/";
-        this.s3Client = S3Client.builder()
-                .region(Region.of(region))
-                .build();
     }
 
     @Override

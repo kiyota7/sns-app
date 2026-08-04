@@ -181,6 +181,29 @@ npm run dev
 # http://localhost:5173 を開く(/api・/uploadsは自動的にバックエンド(8080)へプロキシされる)
 ```
 
+## バックエンドのテスト
+
+```bash
+cd backend
+mvn test
+```
+
+JUnit 5で3層に分けてテストしている。
+
+- **サービス層の単体テスト**(`src/test/java/com/snsapp/service/`): Mockitoでマッパー等をモック化し、
+  Springコンテキストを起動せず高速に検証する
+- **MyBatisマッパーのDB統合テスト**(`src/test/java/com/snsapp/mapper/`): `@MybatisTest`を使い、
+  一時的なインメモリSQLite(`file::memory:?cache=shared`。`src/test/resources/application-test.properties`)
+  に対して実際にSQLを実行して検証する。本番・ローカル開発用のDB(`sns.db`)には一切触れず、
+  プロセス終了時に自動的に破棄される。schema.sql・MyBatisのXMLは本番と完全に同じものを使うため
+  (H2等への置き換えはしていない)、本番と同じSQL方言で実際に動くかを正確に検証できる
+- **コントローラーの統合テスト**(`src/test/java/com/snsapp/controller/`): `@SpringBootTest` +
+  `MockMvc`で、JWT認証フィルタも含めた実際のHTTPリクエスト〜レスポンスを検証する
+  (これまで手動でcurl確認していた内容の自動化)
+
+いずれのテストも`@Transactional`により、テストメソッドごとに書き込んだデータを自動的に
+ロールバックしてから次のテストに進む。
+
 ## ディレクトリ構成
 
 ```
@@ -210,6 +233,7 @@ npm run dev
 - [x] 投稿画像の保存先をS3に移行(EC2ローカル保存から切り替え。IAMインスタンスプロファイル経由でアクセス)
 - [x] プロフィール編集でアイコン画像を設定可能に(投稿画像と同じ`ImageStorageService`経由で保存)
 - [x] springdoc-openapiによるSwagger UI / OpenAPI仕様書の自動生成
+- [x] バックエンドのテスト整備(サービス単体・MyBatisマッパーDB統合・コントローラー統合、計116件)
 
 ## 開発ワークフロー
 
