@@ -108,6 +108,18 @@ mvn spring-boot:run
 ローテーションされる。ログアウト・リフレッシュで使用済みになったトークンはjti(トークンID)を
 blacklistに登録することで、以降使えなくする。
 
+## API仕様書(Swagger UI)
+
+springdoc-openapiにより、コントローラのコードからOpenAPI仕様・Swagger UIを自動生成している。
+ローカル実行時は`http://localhost:8080/swagger-ui.html`、本番(EC2)では
+`http://<Elastic IP>/swagger-ui.html`でアクセスできる(認証不要で閲覧可能。ドキュメント自体の
+公開範囲は、これまで`/uploads/**`を認証なしで配信していたのと同様の考え方)。OpenAPI(JSON)は
+`/v3/api-docs`から取得できる。
+
+保護されたエンドポイントは、`/api/auth/login`等で取得したアクセストークンを右上の「Authorize」
+ボタンから貼り付けることで、Swagger UI上から直接試すことができる(`OpenApiConfig`で
+`bearerAuth`セキュリティスキームを設定済み)。
+
 ## バックエンド(投稿の作成・編集・削除・タイムライン・コメント・いいね)
 
 `POST /api/posts`(`multipart/form-data`。本文+画像は任意)・`GET /api/posts`(全体タイムライン、
@@ -197,6 +209,7 @@ npm run dev
 - [x] AWSデプロイ構成(Terraform、EC2 + SSM。RDSは使わずSQLiteをEC2ローカルで永続化)
 - [x] 投稿画像の保存先をS3に移行(EC2ローカル保存から切り替え。IAMインスタンスプロファイル経由でアクセス)
 - [x] プロフィール編集でアイコン画像を設定可能に(投稿画像と同じ`ImageStorageService`経由で保存)
+- [x] springdoc-openapiによるSwagger UI / OpenAPI仕様書の自動生成
 
 ## 開発ワークフロー
 
