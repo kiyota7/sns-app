@@ -13,11 +13,17 @@ import com.snsapp.model.User;
 import com.snsapp.security.JwtService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import static net.logstash.logback.argument.StructuredArguments.kv;
+
 @Service
 public class AuthService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     private final UserMapper userMapper;
     private final TokenBlacklistMapper tokenBlacklistMapper;
@@ -116,6 +122,11 @@ public class AuthService {
             throw new InvalidCredentialsException("リフレッシュトークンが無効です。再度ログインしてください。");
         }
         if (tokenBlacklistMapper.existsByJti(claims.getId())) {
+            // 使用済み(失効済み)のリフレッシュトークンが再度使われた。ローテーション運用上は
+            // 通常発生しないため、トークン漏洩・盗難の兆候として運用監視で注視すべきイベント。
+            log.warn("blacklisted refresh token reuse detected",
+                    kv("jti", claims.getId()),
+                    kv("username", claims.getSubject()));
             throw new InvalidCredentialsException("リフレッシュトークンが無効です。再度ログインしてください。");
         }
         return claims;
