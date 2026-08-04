@@ -204,6 +204,23 @@ JUnit 5で3層に分けてテストしている。
 いずれのテストも`@Transactional`により、テストメソッドごとに書き込んだデータを自動的に
 ロールバックしてから次のテストに進む。
 
+## フロントエンドのテスト
+
+```bash
+cd frontend
+npm test
+```
+
+Vitest + Vue Test Utils(jsdom環境)でテストしている。E2Eテストは対象外。
+
+- **`src/lib/__tests__/`**: `api.js`の単体テスト。`fetch`をモック化し、認証ヘッダーの付与、
+  アクセストークン失効時(401)のリフレッシュ→リトライ、エラーメッセージの解析などを検証する。
+  `format.js`の日時フォーマットも検証する
+- **`src/components/__tests__/`・`src/views/__tests__/`**: 各UIコンポーネント・画面のテスト
+  (`PostCard`・`LoginView`・`RegisterView`・`TimelineView`・`ProfileView`・`SearchView`・
+  `PostDetailView`)。`vue-router`・`src/lib/api.js`をモック化し、表示内容・フォーム送信時の
+  API呼び出し・エラー表示・認証失効時のログイン画面へのリダイレクトなどを検証する
+
 ## ディレクトリ構成
 
 ```
@@ -234,6 +251,7 @@ JUnit 5で3層に分けてテストしている。
 - [x] プロフィール編集でアイコン画像を設定可能に(投稿画像と同じ`ImageStorageService`経由で保存)
 - [x] springdoc-openapiによるSwagger UI / OpenAPI仕様書の自動生成
 - [x] バックエンドのテスト整備(サービス単体・MyBatisマッパーDB統合・コントローラー統合、計116件)
+- [x] フロントエンドのテスト整備(Vitest + Vue Test Utils、単体・コンポーネントテスト計65件)
 
 ## 開発ワークフロー
 
