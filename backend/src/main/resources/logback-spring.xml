@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!--
+        標準出力へJSON形式(1行1レコード)で出力する。EC2上ではDockerコンテナの標準出力として
+        収集されるため(`docker logs`で確認可能)、構造化しておくことで将来的にログ集約基盤
+        (CloudWatch Logs等)へ転送する際もパース不要でそのまま取り込める。
+        MDCに積んだキー(request_id, user_id等)は自動的にJSONのトップレベルフィールドとして
+        出力される(RequestLoggingFilter・JwtAuthenticationFilter参照)。
+    -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>{"service":"sns-app-backend"}</customFields>
+            <fieldNames>
+                <timestamp>timestamp</timestamp>
+                <version>[ignore]</version>
+                <logger>logger</logger>
+                <thread>thread</thread>
+                <level>level</level>
+                <levelValue>[ignore]</levelValue>
+            </fieldNames>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+
+</configuration>
