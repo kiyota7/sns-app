@@ -1,3 +1,5 @@
+import type { Comment, FollowResult, LikeResult, Post, Profile, StoredAuth, User, UserSearchResult } from './types'
+
 const STORAGE_KEY = 'sns-auth'
 
 export class AuthExpiredError extends Error {
@@ -7,28 +9,28 @@ export class AuthExpiredError extends Error {
   }
 }
 
-function loadAuth() {
+function loadAuth(): StoredAuth | null {
   const raw = localStorage.getItem(STORAGE_KEY)
   return raw ? JSON.parse(raw) : null
 }
 
-function saveAuth(auth) {
+function saveAuth(auth: StoredAuth): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(auth))
 }
 
-function clearAuth() {
+function clearAuth(): void {
   localStorage.removeItem(STORAGE_KEY)
 }
 
-function getUser() {
+function getUser(): User | null {
   return loadAuth()?.user ?? null
 }
 
-function getAccessToken() {
+function getAccessToken(): string | null {
   return loadAuth()?.accessToken ?? null
 }
 
-async function parseErrorMessage(response) {
+async function parseErrorMessage(response: Response): Promise<string> {
   try {
     const body = await response.json()
     return body.error ?? '予期しないエラーが発生しました。'
@@ -37,7 +39,13 @@ async function parseErrorMessage(response) {
   }
 }
 
-async function register({ username, email, password }) {
+interface Credentials {
+  username?: string
+  email: string
+  password: string
+}
+
+async function register({ username, email, password }: Required<Credentials>): Promise<StoredAuth> {
   const response = await fetch('/api/auth/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -46,12 +54,12 @@ async function register({ username, email, password }) {
   if (!response.ok) {
     throw new Error(await parseErrorMessage(response))
   }
-  const auth = await response.json()
+  const auth: StoredAuth = await response.json()
   saveAuth(auth)
   return auth
 }
 
-async function login({ email, password }) {
+async function login({ email, password }: Pick<Credentials, 'email' | 'password'>): Promise<StoredAuth> {
   const response = await fetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -60,14 +68,14 @@ async function login({ email, password }) {
   if (!response.ok) {
     throw new Error(await parseErrorMessage(response))
   }
-  const auth = await response.json()
+  const auth: StoredAuth = await response.json()
   saveAuth(auth)
   return auth
 }
 
 // リフレッシュトークンを使ってアクセストークン・リフレッシュトークンを再発行する。
 // 成功時は新しいトークンの組を保存し直す(ユーザー情報はそのまま維持する)。
-async function refresh() {
+async function refresh(): Promise<string> {
   const current = loadAuth()
   if (!current?.refreshToken) {
     clearAuth()
@@ -84,15 +92,15 @@ async function refresh() {
     throw new AuthExpiredError()
   }
 
-  const { accessToken, refreshToken } = await response.json()
+  const { accessToken, refreshToken }: { accessToken: string; refreshToken: string } = await response.json()
   saveAuth({ accessToken, refreshToken, user: current.user })
   return accessToken
 }
 
 // 認証付きAPIリクエスト用の共通ラッパー。Authorizationヘッダーを自動で付与し、
 // アクセストークンが失効している(401)場合はリフレッシュを1回試みてからリトライする。
-async function authFetch(url, options = {}) {
-  const requestWith = (token) =>
+async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  const requestWith = (token: string) =>
     fetch(url, {
       ...options,
       headers: {
@@ -116,12 +124,12 @@ async function authFetch(url, options = {}) {
   return response
 }
 
-async function me() {
+async function me(): Promise<User> {
   const response = await authFetch('/api/auth/me')
   if (!response.ok) {
     throw new Error(await parseErrorMessage(response))
   }
-  const user = await response.json()
+  const user: User = await response.json()
   const current = loadAuth()
   if (current) {
     saveAuth({ ...current, user })
@@ -129,7 +137,7 @@ async function me() {
   return user
 }
 
-async function logout() {
+async function logout(): Promise<void> {
   const current = loadAuth()
   if (current) {
     try {
@@ -156,7 +164,7 @@ export const auth = {
   isLoggedIn: () => getAccessToken() !== null,
 }
 
-async function listPosts({ scope } = {}) {
+async function listPosts({ scope }: { scope?: string } = {}): Promise<Post[]> {
   const url = scope ? `/api/posts?scope=${encodeURIComponent(scope)}` : '/api/posts'
   const response = await authFetch(url)
   if (!response.ok) {
@@ -165,7 +173,7 @@ async function listPosts({ scope } = {}) {
   return response.json()
 }
 
-async function createPost({ body, image }) {
+async function createPost({ body, image }: { body: string; image?: File | null }): Promise<Post> {
   const formData = new FormData()
   formData.append('body', body)
   if (image) {
@@ -181,7 +189,7 @@ async function createPost({ body, image }) {
   return response.json()
 }
 
-async function updatePost(id, { body }) {
+async function updatePost(id: number, { body }: { body: string }): Promise<Post> {
   const response = await authFetch(`/api/posts/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -193,14 +201,14 @@ async function updatePost(id, { body }) {
   return response.json()
 }
 
-async function deletePost(id) {
+async function deletePost(id: number): Promise<void> {
   const response = await authFetch(`/api/posts/${id}`, { method: 'DELETE' })
   if (!response.ok) {
     throw new Error(await parseErrorMessage(response))
   }
 }
 
-async function getPostById(id) {
+async function getPostById(id: number | string): Promise<Post> {
   const response = await authFetch(`/api/posts/${id}`)
   if (!response.ok) {
     throw new Error(await parseErrorMessage(response))
@@ -208,7 +216,7 @@ async function getPostById(id) {
   return response.json()
 }
 
-async function toggleLike(id) {
+async function toggleLike(id: number): Promise<LikeResult> {
   const response = await authFetch(`/api/posts/${id}/likes`, { method: 'POST' })
   if (!response.ok) {
     throw new Error(await parseErrorMessage(response))
@@ -225,7 +233,7 @@ export const posts = {
   toggleLike,
 }
 
-async function listComments(postId) {
+async function listComments(postId: number | string): Promise<Comment[]> {
   const response = await authFetch(`/api/posts/${postId}/comments`)
   if (!response.ok) {
     throw new Error(await parseErrorMessage(response))
@@ -233,7 +241,7 @@ async function listComments(postId) {
   return response.json()
 }
 
-async function createComment(postId, { body }) {
+async function createComment(postId: number | string, { body }: { body: string }): Promise<Comment> {
   const response = await authFetch(`/api/posts/${postId}/comments`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -250,7 +258,7 @@ export const comments = {
   create: createComment,
 }
 
-async function getProfile(id) {
+async function getProfile(id: number | string): Promise<Profile> {
   const response = await authFetch(`/api/users/${id}`)
   if (!response.ok) {
     throw new Error(await parseErrorMessage(response))
@@ -258,7 +266,7 @@ async function getProfile(id) {
   return response.json()
 }
 
-async function getUserPosts(id) {
+async function getUserPosts(id: number | string): Promise<Post[]> {
   const response = await authFetch(`/api/users/${id}/posts`)
   if (!response.ok) {
     throw new Error(await parseErrorMessage(response))
@@ -266,7 +274,15 @@ async function getUserPosts(id) {
   return response.json()
 }
 
-async function updateProfile({ username, bio, avatar }) {
+async function updateProfile({
+  username,
+  bio,
+  avatar,
+}: {
+  username: string
+  bio?: string
+  avatar?: File | null
+}): Promise<Profile> {
   const formData = new FormData()
   formData.append('username', username)
   formData.append('bio', bio ?? '')
@@ -283,7 +299,7 @@ async function updateProfile({ username, bio, avatar }) {
   return response.json()
 }
 
-async function toggleFollow(id) {
+async function toggleFollow(id: number): Promise<FollowResult> {
   const response = await authFetch(`/api/users/${id}/follow`, { method: 'POST' })
   if (!response.ok) {
     throw new Error(await parseErrorMessage(response))
@@ -291,7 +307,7 @@ async function toggleFollow(id) {
   return response.json()
 }
 
-async function searchUsers(query) {
+async function searchUsers(query: string): Promise<UserSearchResult[]> {
   const response = await authFetch(`/api/users?query=${encodeURIComponent(query)}`)
   if (!response.ok) {
     throw new Error(await parseErrorMessage(response))

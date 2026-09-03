@@ -1,25 +1,27 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { auth, posts, AuthExpiredError } from '../lib/api'
+import { getErrorMessage } from '../lib/errors'
+import type { Post } from '../lib/types'
 import PostCard from '../components/PostCard.vue'
 
 const router = useRouter()
 const user = ref(auth.getUser())
-const postList = ref([])
+const postList = ref<Post[]>([])
 const loading = ref(true)
 const errorMessage = ref('')
-const activeTab = ref('all')
+const activeTab = ref<'all' | 'following'>('all')
 
 const composeBody = ref('')
-const composeImageFile = ref(null)
+const composeImageFile = ref<File | null>(null)
 const composeImagePreview = ref('')
 const composeSubmitting = ref(false)
-const fileInput = ref(null)
+const fileInput = ref<HTMLInputElement | null>(null)
 
 onMounted(() => loadTab('all'))
 
-async function loadTab(tab) {
+async function loadTab(tab: 'all' | 'following') {
   activeTab.value = tab
   loading.value = true
   errorMessage.value = ''
@@ -30,19 +32,19 @@ async function loadTab(tab) {
       router.push({ name: 'login' })
       return
     }
-    errorMessage.value = error.message
+    errorMessage.value = getErrorMessage(error)
   } finally {
     loading.value = false
   }
 }
 
-function handleImageChange(event) {
-  const file = event.target.files[0]
+function handleImageChange(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0]
   if (!file) return
   composeImageFile.value = file
   const reader = new FileReader()
   reader.onload = () => {
-    composeImagePreview.value = reader.result
+    composeImagePreview.value = reader.result as string
   }
   reader.readAsDataURL(file)
 }
@@ -67,20 +69,20 @@ async function handleCompose() {
     composeBody.value = ''
     removeComposeImage()
   } catch (error) {
-    errorMessage.value = error.message
+    errorMessage.value = getErrorMessage(error)
   } finally {
     composeSubmitting.value = false
   }
 }
 
-function handlePostUpdated(updated) {
+function handlePostUpdated(updated: Post) {
   const index = postList.value.findIndex((p) => p.id === updated.id)
   if (index !== -1) {
     postList.value[index] = updated
   }
 }
 
-function handlePostDeleted(postId) {
+function handlePostDeleted(postId: number) {
   postList.value = postList.value.filter((p) => p.id !== postId)
 }
 

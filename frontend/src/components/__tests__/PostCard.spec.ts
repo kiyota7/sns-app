@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, RouterLinkStub } from '@vue/test-utils'
 import PostCard from '../PostCard.vue'
 import { posts } from '../../lib/api'
+import type { Post } from '../../lib/types'
 
 vi.mock('../../lib/api', () => ({
   posts: {
@@ -11,7 +12,9 @@ vi.mock('../../lib/api', () => ({
   },
 }))
 
-const basePost = {
+const mockedPosts = vi.mocked(posts, { deep: true })
+
+const basePost: Post = {
   id: 1,
   userId: 10,
   username: 'alice',
@@ -24,7 +27,7 @@ const basePost = {
   liked: false,
 }
 
-function mountCard(props = {}) {
+function mountCard(props: { post?: Post; currentUser?: { id: number; username: string } } = {}) {
   return mount(PostCard, {
     props: { post: basePost, currentUser: { id: 10, username: 'alice' }, ...props },
     global: { stubs: { RouterLink: RouterLinkStub } },
@@ -69,19 +72,19 @@ describe('PostCard', () => {
   })
 
   it('shows the filled heart and updated count after liking', async () => {
-    posts.toggleLike.mockResolvedValueOnce({ liked: true, likeCount: 3 })
+    mockedPosts.toggleLike.mockResolvedValueOnce({ liked: true, likeCount: 3 })
     const wrapper = mountCard()
 
     await wrapper.find('.action-btn').trigger('click')
     await flushPromises()
 
-    expect(posts.toggleLike).toHaveBeenCalledWith(1)
+    expect(mockedPosts.toggleLike).toHaveBeenCalledWith(1)
     expect(wrapper.find('.action-btn').text()).toContain('♥')
     expect(wrapper.find('.action-btn').text()).toContain('3')
   })
 
   it('emits an error event when liking fails', async () => {
-    posts.toggleLike.mockRejectedValueOnce(new Error('like failed'))
+    mockedPosts.toggleLike.mockRejectedValueOnce(new Error('like failed'))
     const wrapper = mountCard()
 
     await wrapper.find('.action-btn').trigger('click')
@@ -92,7 +95,7 @@ describe('PostCard', () => {
 
   it('enters edit mode, saves, and emits updated', async () => {
     const updatedPost = { ...basePost, body: 'edited body' }
-    posts.update.mockResolvedValueOnce(updatedPost)
+    mockedPosts.update.mockResolvedValueOnce(updatedPost)
     const wrapper = mountCard()
 
     await wrapper.find('button.btn-small').trigger('click') // 編集
@@ -101,10 +104,10 @@ describe('PostCard', () => {
     await textarea.setValue('edited body')
 
     const saveButton = wrapper.findAll('button').find((b) => b.text() === '保存')
-    await saveButton.trigger('click')
+    await saveButton!.trigger('click')
     await flushPromises()
 
-    expect(posts.update).toHaveBeenCalledWith(1, { body: 'edited body' })
+    expect(mockedPosts.update).toHaveBeenCalledWith(1, { body: 'edited body' })
     expect(wrapper.emitted('updated')).toEqual([[updatedPost]])
   })
 
@@ -115,22 +118,22 @@ describe('PostCard', () => {
     expect(wrapper.find('textarea.edit-post-textarea').exists()).toBe(true)
 
     const cancelButton = wrapper.findAll('button').find((b) => b.text() === 'キャンセル')
-    await cancelButton.trigger('click')
+    await cancelButton!.trigger('click')
 
     expect(wrapper.find('textarea.edit-post-textarea').exists()).toBe(false)
-    expect(posts.update).not.toHaveBeenCalled()
+    expect(mockedPosts.update).not.toHaveBeenCalled()
   })
 
   it('deletes the post after confirmation and emits deleted', async () => {
     vi.stubGlobal('confirm', vi.fn(() => true))
-    posts.remove.mockResolvedValueOnce(undefined)
+    mockedPosts.remove.mockResolvedValueOnce(undefined)
     const wrapper = mountCard()
 
     const deleteButton = wrapper.findAll('button').find((b) => b.text() === '削除')
-    await deleteButton.trigger('click')
+    await deleteButton!.trigger('click')
     await flushPromises()
 
-    expect(posts.remove).toHaveBeenCalledWith(1)
+    expect(mockedPosts.remove).toHaveBeenCalledWith(1)
     expect(wrapper.emitted('deleted')).toEqual([[1]])
   })
 
@@ -139,10 +142,10 @@ describe('PostCard', () => {
     const wrapper = mountCard()
 
     const deleteButton = wrapper.findAll('button').find((b) => b.text() === '削除')
-    await deleteButton.trigger('click')
+    await deleteButton!.trigger('click')
     await flushPromises()
 
-    expect(posts.remove).not.toHaveBeenCalled()
+    expect(mockedPosts.remove).not.toHaveBeenCalled()
     expect(wrapper.emitted('deleted')).toBeUndefined()
   })
 })

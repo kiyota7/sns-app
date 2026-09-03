@@ -1,18 +1,20 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { auth, users, AuthExpiredError } from '../lib/api'
+import { getErrorMessage } from '../lib/errors'
+import type { UserSearchResult } from '../lib/types'
 
 const router = useRouter()
 const currentUser = ref(auth.getUser())
 const searchQuery = ref('')
-const results = ref([])
+const results = ref<UserSearchResult[]>([])
 const loading = ref(true)
 const errorMessage = ref('')
 
 onMounted(() => search(''))
 
-async function search(query) {
+async function search(query: string) {
   loading.value = true
   errorMessage.value = ''
   try {
@@ -22,7 +24,7 @@ async function search(query) {
       router.push({ name: 'login' })
       return
     }
-    errorMessage.value = error.message
+    errorMessage.value = getErrorMessage(error)
   } finally {
     loading.value = false
   }
@@ -32,13 +34,13 @@ function handleSubmit() {
   search(searchQuery.value.trim())
 }
 
-async function toggleFollow(result) {
+async function toggleFollow(result: UserSearchResult) {
   errorMessage.value = ''
   try {
     const updated = await users.toggleFollow(result.id)
     result.following = updated.following
   } catch (error) {
-    errorMessage.value = error.message
+    errorMessage.value = getErrorMessage(error)
   }
 }
 

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, RouterLinkStub, flushPromises } from '@vue/test-utils'
 import PostDetailView from '../PostDetailView.vue'
 import { auth, posts, comments, AuthExpiredError } from '../../lib/api'
+import type { Post, User } from '../../lib/types'
 
 const push = vi.fn()
 
@@ -20,7 +21,13 @@ vi.mock('../../lib/api', async () => {
   }
 })
 
-const post = {
+const mockedAuth = vi.mocked(auth, { deep: true })
+const mockedPosts = vi.mocked(posts, { deep: true })
+const mockedComments = vi.mocked(comments, { deep: true })
+
+const ALICE: User = { id: 1, username: 'alice', email: 'alice@example.com', bio: null }
+
+const post: Post = {
   id: 7,
   userId: 1,
   username: 'alice',
@@ -35,7 +42,7 @@ const post = {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  auth.getUser.mockReturnValue({ id: 1, username: 'alice' })
+  mockedAuth.getUser.mockReturnValue(ALICE)
 })
 
 function mountView() {
@@ -46,19 +53,21 @@ function mountView() {
 
 describe('PostDetailView', () => {
   it('loads the post and its comments on mount', async () => {
-    posts.getById.mockResolvedValueOnce(post)
-    comments.list.mockResolvedValueOnce([{ id: 1, username: 'bob', body: 'nice!', createdAt: post.createdAt }])
+    mockedPosts.getById.mockResolvedValueOnce(post)
+    mockedComments.list.mockResolvedValueOnce([
+      { id: 1, postId: 7, userId: 2, username: 'bob', body: 'nice!', createdAt: post.createdAt },
+    ])
     const wrapper = mountView()
     await flushPromises()
 
-    expect(posts.getById).toHaveBeenCalledWith('7')
-    expect(comments.list).toHaveBeenCalledWith('7')
+    expect(mockedPosts.getById).toHaveBeenCalledWith('7')
+    expect(mockedComments.list).toHaveBeenCalledWith('7')
     expect(wrapper.text()).toContain('nice!')
   })
 
   it('shows the empty state when there are no comments', async () => {
-    posts.getById.mockResolvedValueOnce(post)
-    comments.list.mockResolvedValueOnce([])
+    mockedPosts.getById.mockResolvedValueOnce(post)
+    mockedComments.list.mockResolvedValueOnce([])
     const wrapper = mountView()
     await flushPromises()
 
@@ -66,26 +75,26 @@ describe('PostDetailView', () => {
   })
 
   it('submits a new comment and prepends it to the list', async () => {
-    posts.getById.mockResolvedValueOnce(post)
-    comments.list.mockResolvedValueOnce([])
+    mockedPosts.getById.mockResolvedValueOnce(post)
+    mockedComments.list.mockResolvedValueOnce([])
     const wrapper = mountView()
     await flushPromises()
 
-    const newComment = { id: 2, username: 'alice', body: 'my comment', createdAt: post.createdAt }
-    comments.create.mockResolvedValueOnce(newComment)
+    const newComment = { id: 2, postId: 7, userId: 1, username: 'alice', body: 'my comment', createdAt: post.createdAt }
+    mockedComments.create.mockResolvedValueOnce(newComment)
 
     await wrapper.find('.comment-form input').setValue('my comment')
     await wrapper.find('.comment-form').trigger('submit.prevent')
     await flushPromises()
 
-    expect(comments.create).toHaveBeenCalledWith('7', { body: 'my comment' })
+    expect(mockedComments.create).toHaveBeenCalledWith('7', { body: 'my comment' })
     expect(wrapper.text()).toContain('my comment')
-    expect(wrapper.find('.comment-form input').element.value).toBe('')
+    expect((wrapper.find('.comment-form input').element as HTMLInputElement).value).toBe('')
   })
 
   it('redirects to login when the initial load expires auth', async () => {
-    posts.getById.mockRejectedValueOnce(new AuthExpiredError())
-    comments.list.mockResolvedValueOnce([])
+    mockedPosts.getById.mockRejectedValueOnce(new AuthExpiredError())
+    mockedComments.list.mockResolvedValueOnce([])
     mountView()
     await flushPromises()
 
@@ -93,8 +102,8 @@ describe('PostDetailView', () => {
   })
 
   it('navigates back to the timeline when the post is deleted', async () => {
-    posts.getById.mockResolvedValueOnce(post)
-    comments.list.mockResolvedValueOnce([])
+    mockedPosts.getById.mockResolvedValueOnce(post)
+    mockedComments.list.mockResolvedValueOnce([])
     const wrapper = mountView()
     await flushPromises()
 

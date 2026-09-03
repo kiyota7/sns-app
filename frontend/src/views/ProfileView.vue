@@ -1,24 +1,26 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { auth, users, AuthExpiredError } from '../lib/api'
+import { getErrorMessage } from '../lib/errors'
+import type { Post, Profile } from '../lib/types'
 import PostCard from '../components/PostCard.vue'
 
 const route = useRoute()
 const router = useRouter()
 const currentUser = ref(auth.getUser())
-const profile = ref(null)
-const profilePosts = ref([])
+const profile = ref<Profile | null>(null)
+const profilePosts = ref<Post[]>([])
 const loading = ref(true)
 const errorMessage = ref('')
 
 const editing = ref(false)
 const editUsername = ref('')
 const editBio = ref('')
-const editAvatarFile = ref(null)
+const editAvatarFile = ref<File | null>(null)
 const editAvatarPreview = ref('')
 const editSubmitting = ref(false)
-const avatarFileInput = ref(null)
+const avatarFileInput = ref<HTMLInputElement | null>(null)
 
 const followSubmitting = ref(false)
 
@@ -29,7 +31,7 @@ onMounted(load)
 async function load() {
   loading.value = true
   errorMessage.value = ''
-  const userId = route.params.id
+  const userId = route.params.id as string
   try {
     const [profileResult, postsResult] = await Promise.all([users.getProfile(userId), users.getPosts(userId)])
     profile.value = profileResult
@@ -39,7 +41,7 @@ async function load() {
       router.push({ name: 'login' })
       return
     }
-    errorMessage.value = error.message
+    errorMessage.value = getErrorMessage(error)
   } finally {
     loading.value = false
   }
@@ -50,6 +52,7 @@ function handleBack() {
 }
 
 function startEdit() {
+  if (!profile.value) return
   editUsername.value = profile.value.username
   editBio.value = profile.value.bio || ''
   editAvatarFile.value = null
@@ -61,13 +64,13 @@ function cancelEdit() {
   editing.value = false
 }
 
-function handleAvatarChange(event) {
-  const file = event.target.files[0]
+function handleAvatarChange(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0]
   if (!file) return
   editAvatarFile.value = file
   const reader = new FileReader()
   reader.onload = () => {
-    editAvatarPreview.value = reader.result
+    editAvatarPreview.value = reader.result as string
   }
   reader.readAsDataURL(file)
 }
@@ -95,14 +98,14 @@ async function saveEdit() {
     await auth.me()
     currentUser.value = auth.getUser()
   } catch (error) {
-    errorMessage.value = error.message
+    errorMessage.value = getErrorMessage(error)
   } finally {
     editSubmitting.value = false
   }
 }
 
 async function toggleFollow() {
-  if (followSubmitting.value) return
+  if (followSubmitting.value || !profile.value) return
   followSubmitting.value = true
   errorMessage.value = ''
   try {
@@ -110,24 +113,24 @@ async function toggleFollow() {
     profile.value.following = result.following
     profile.value.followerCount = result.followerCount
   } catch (error) {
-    errorMessage.value = error.message
+    errorMessage.value = getErrorMessage(error)
   } finally {
     followSubmitting.value = false
   }
 }
 
-function avatarInitial(username) {
+function avatarInitial(username?: string | null) {
   return username ? username.charAt(0).toUpperCase() : '?'
 }
 
-function handlePostUpdated(updated) {
+function handlePostUpdated(updated: Post) {
   const index = profilePosts.value.findIndex((p) => p.id === updated.id)
   if (index !== -1) {
     profilePosts.value[index] = updated
   }
 }
 
-function handlePostDeleted(postId) {
+function handlePostDeleted(postId: number) {
   profilePosts.value = profilePosts.value.filter((p) => p.id !== postId)
 }
 
