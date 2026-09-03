@@ -1,6 +1,7 @@
 package com.snsapp.service;
 
 import com.snsapp.dto.LikeResponse;
+import com.snsapp.dto.PostListResponse;
 import com.snsapp.dto.PostResponse;
 import com.snsapp.exception.ForbiddenPostAccessException;
 import com.snsapp.exception.PostNotFoundException;
@@ -35,16 +36,25 @@ public class PostService {
         this.imageStorageService = imageStorageService;
     }
 
-    public List<PostResponse> list(Long currentUserId) {
-        return postMapper.findAllOrderByCreatedAtDesc(currentUserId).stream()
-                .map(PostResponse::from)
-                .collect(Collectors.toList());
+    public PostListResponse list(Long currentUserId, Long cursor, int limit) {
+        List<Post> posts = postMapper.findAllOrderByCreatedAtDesc(currentUserId, cursor, limit + 1);
+        return toPageResponse(posts, limit);
     }
 
-    public List<PostResponse> listFollowing(Long currentUserId) {
-        return postMapper.findFollowingOrderByCreatedAtDesc(currentUserId).stream()
+    public PostListResponse listFollowing(Long currentUserId, Long cursor, int limit) {
+        List<Post> posts = postMapper.findFollowingOrderByCreatedAtDesc(currentUserId, cursor, limit + 1);
+        return toPageResponse(posts, limit);
+    }
+
+    // limit+1件取得しておき、実際にlimitを超えていれば次ページがあると判断する
+    // (超過分はレスポンスに含めず切り捨てる)。
+    private PostListResponse toPageResponse(List<Post> posts, int limit) {
+        boolean hasMore = posts.size() > limit;
+        List<PostResponse> items = posts.stream()
+                .limit(limit)
                 .map(PostResponse::from)
                 .collect(Collectors.toList());
+        return new PostListResponse(items, hasMore);
     }
 
     public PostResponse getById(Long postId, Long currentUserId) {

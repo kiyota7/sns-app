@@ -12,11 +12,19 @@ public interface PostMapper {
 
     void insert(Post post);
 
-    List<Post> findAllOrderByCreatedAtDesc(@Param("currentUserId") Long currentUserId);
+    List<Post> findAllOrderByCreatedAtDesc(
+            @Param("currentUserId") Long currentUserId,
+            @Param("cursor") Long cursor,
+            @Param("fetchLimit") int fetchLimit
+    );
 
     List<Post> findByUserIdOrderByCreatedAtDesc(@Param("userId") Long userId, @Param("currentUserId") Long currentUserId);
 
-    List<Post> findFollowingOrderByCreatedAtDesc(@Param("currentUserId") Long currentUserId);
+    List<Post> findFollowingOrderByCreatedAtDesc(
+            @Param("currentUserId") Long currentUserId,
+            @Param("cursor") Long cursor,
+            @Param("fetchLimit") int fetchLimit
+    );
 
     Optional<Post> findById(@Param("id") Long id, @Param("currentUserId") Long currentUserId);
 

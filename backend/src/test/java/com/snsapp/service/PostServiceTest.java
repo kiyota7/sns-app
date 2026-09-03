@@ -1,6 +1,7 @@
 package com.snsapp.service;
 
 import com.snsapp.dto.LikeResponse;
+import com.snsapp.dto.PostListResponse;
 import com.snsapp.dto.PostResponse;
 import com.snsapp.exception.ForbiddenPostAccessException;
 import com.snsapp.exception.PostNotFoundException;
@@ -56,23 +57,37 @@ class PostServiceTest {
 
     @Test
     void list_mapsAllPostsToResponses() {
-        when(postMapper.findAllOrderByCreatedAtDesc(1L))
+        when(postMapper.findAllOrderByCreatedAtDesc(1L, null, 21))
                 .thenReturn(List.of(samplePost(1L, 1L), samplePost(2L, 2L)));
 
-        List<PostResponse> result = postService.list(1L);
+        PostListResponse result = postService.list(1L, null, 20);
 
-        assertThat(result).hasSize(2);
-        assertThat(result.get(0).id()).isEqualTo(1L);
+        assertThat(result.items()).hasSize(2);
+        assertThat(result.items().get(0).id()).isEqualTo(1L);
+        assertThat(result.hasMore()).isFalse();
+    }
+
+    @Test
+    void list_passesCursorThroughAndFetchesOneExtraToDetermineHasMore() {
+        when(postMapper.findAllOrderByCreatedAtDesc(1L, 10L, 3)).thenReturn(
+                List.of(samplePost(9L, 1L), samplePost(8L, 1L), samplePost(7L, 1L))
+        );
+
+        PostListResponse result = postService.list(1L, 10L, 2);
+
+        assertThat(result.items()).extracting(PostResponse::id).containsExactly(9L, 8L);
+        assertThat(result.hasMore()).isTrue();
     }
 
     @Test
     void listFollowing_delegatesToFollowingQuery() {
-        when(postMapper.findFollowingOrderByCreatedAtDesc(1L)).thenReturn(List.of(samplePost(3L, 2L)));
+        when(postMapper.findFollowingOrderByCreatedAtDesc(1L, null, 21)).thenReturn(List.of(samplePost(3L, 2L)));
 
-        List<PostResponse> result = postService.listFollowing(1L);
+        PostListResponse result = postService.listFollowing(1L, null, 20);
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).id()).isEqualTo(3L);
+        assertThat(result.items()).hasSize(1);
+        assertThat(result.items().get(0).id()).isEqualTo(3L);
+        assertThat(result.hasMore()).isFalse();
     }
 
     @Test

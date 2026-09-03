@@ -89,8 +89,48 @@ class PostControllerTest {
 
         mockMvc.perform(get("/api/posts").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].body").value("second"))
-                .andExpect(jsonPath("$[1].body").value("first"));
+                .andExpect(jsonPath("$.items[0].body").value("second"))
+                .andExpect(jsonPath("$.items[1].body").value("first"))
+                .andExpect(jsonPath("$.hasMore").value(false));
+    }
+
+    @Test
+    void list_limitCapsPageSizeAndReportsHasMore() throws Exception {
+        String token = tokenFor("alice");
+        createPost(token, "first");
+        createPost(token, "second");
+        createPost(token, "third");
+
+        mockMvc.perform(get("/api/posts").param("limit", "2").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(2))
+                .andExpect(jsonPath("$.items[0].body").value("third"))
+                .andExpect(jsonPath("$.items[1].body").value("second"))
+                .andExpect(jsonPath("$.hasMore").value(true));
+    }
+
+    @Test
+    void list_cursorReturnsPostsOlderThanTheGivenId() throws Exception {
+        String token = tokenFor("alice");
+        createPost(token, "first");
+        Long secondId = createPost(token, "second");
+        createPost(token, "third");
+
+        mockMvc.perform(get("/api/posts").param("cursor", secondId.toString()).header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].body").value("first"))
+                .andExpect(jsonPath("$.hasMore").value(false));
+    }
+
+    @Test
+    void list_limitOutOfRange_returns400() throws Exception {
+        String token = tokenFor("alice");
+
+        mockMvc.perform(get("/api/posts").param("limit", "0").header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/posts").param("limit", "51").header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -191,7 +231,7 @@ class PostControllerTest {
 
         mockMvc.perform(get("/api/posts?scope=following").header("Authorization", "Bearer " + aliceToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].body").value("bob's post"))
-                .andExpect(jsonPath("$.length()").value(1));
+                .andExpect(jsonPath("$.items[0].body").value("bob's post"))
+                .andExpect(jsonPath("$.items.length()").value(1));
     }
 }

@@ -26,6 +26,11 @@ export interface Post {
   liked: boolean
 }
 
+export interface PostPage {
+  items: Post[]
+  hasMore: boolean
+}
+
 export interface Comment {
   id: number
   postId: number

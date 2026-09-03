@@ -39,9 +39,19 @@
         VALUES (#{userId}, #{body}, #{imageUrl})
     </insert>
 
+    <!--
+        カーソルにはcreated_at(ミリ秒精度で一意性の保証がない)ではなく、一意かつ投稿順と
+        厳密に相関するidを使う。同一ミリ秒に複数投稿があっても境界での重複/取りこぼしが起きない。
+    -->
     <select id="findAllOrderByCreatedAtDesc" resultMap="PostResultMap">
         <include refid="selectWithAuthor"/>
-        ORDER BY posts.created_at DESC
+        <where>
+            <if test="cursor != null">
+                posts.id &lt; #{cursor}
+            </if>
+        </where>
+        ORDER BY posts.id DESC
+        LIMIT #{fetchLimit}
     </select>
 
     <select id="findById" resultMap="PostResultMap">
@@ -58,7 +68,13 @@
     <select id="findFollowingOrderByCreatedAtDesc" resultMap="PostResultMap">
         <include refid="selectWithAuthor"/>
         JOIN follows ON follows.followed_id = posts.user_id AND follows.follower_id = #{currentUserId}
-        ORDER BY posts.created_at DESC
+        <where>
+            <if test="cursor != null">
+                posts.id &lt; #{cursor}
+            </if>
+        </where>
+        ORDER BY posts.id DESC
+        LIMIT #{fetchLimit}
     </select>
 
     <update id="update">

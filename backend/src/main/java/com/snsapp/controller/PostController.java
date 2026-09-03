@@ -1,20 +1,23 @@
 package com.snsapp.controller;
 
 import com.snsapp.dto.LikeResponse;
+import com.snsapp.dto.PostListResponse;
 import com.snsapp.dto.PostResponse;
 import com.snsapp.dto.UpdatePostRequest;
 import com.snsapp.security.AuthenticatedUser;
 import com.snsapp.service.PostService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
-
+@Validated
 @RestController
 @RequestMapping("/api/posts")
 public class PostController {
@@ -26,14 +29,16 @@ public class PostController {
     }
 
     @GetMapping
-    public ResponseEntity<List<PostResponse>> list(
+    public ResponseEntity<PostListResponse> list(
             @AuthenticationPrincipal AuthenticatedUser principal,
-            @RequestParam(defaultValue = "all") String scope
+            @RequestParam(defaultValue = "all") String scope,
+            @RequestParam(required = false) Long cursor,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(50) int limit
     ) {
         if ("following".equals(scope)) {
-            return ResponseEntity.ok(postService.listFollowing(principal.id()));
+            return ResponseEntity.ok(postService.listFollowing(principal.id(), cursor, limit));
         }
-        return ResponseEntity.ok(postService.list(principal.id()));
+        return ResponseEntity.ok(postService.list(principal.id(), cursor, limit));
     }
 
     @GetMapping("/{id}")

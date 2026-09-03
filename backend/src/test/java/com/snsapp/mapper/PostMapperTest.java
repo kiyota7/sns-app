@@ -76,7 +76,31 @@ class PostMapperTest {
         Post first = insertPost(alice.getId(), "first");
         Post second = insertPost(alice.getId(), "second");
 
-        List<Post> posts = postMapper.findAllOrderByCreatedAtDesc(alice.getId());
+        List<Post> posts = postMapper.findAllOrderByCreatedAtDesc(alice.getId(), null, 20);
+
+        assertThat(posts).extracting(Post::getId).containsExactly(second.getId(), first.getId());
+    }
+
+    @Test
+    void findAllOrderByCreatedAtDesc_fetchLimitCapsResultSize() throws InterruptedException {
+        User alice = insertUser("alice");
+        insertPost(alice.getId(), "first");
+        insertPost(alice.getId(), "second");
+        insertPost(alice.getId(), "third");
+
+        List<Post> posts = postMapper.findAllOrderByCreatedAtDesc(alice.getId(), null, 2);
+
+        assertThat(posts).hasSize(2);
+    }
+
+    @Test
+    void findAllOrderByCreatedAtDesc_cursorOnlyReturnsOlderPosts() throws InterruptedException {
+        User alice = insertUser("alice");
+        Post first = insertPost(alice.getId(), "first");
+        Post second = insertPost(alice.getId(), "second");
+        Post third = insertPost(alice.getId(), "third");
+
+        List<Post> posts = postMapper.findAllOrderByCreatedAtDesc(alice.getId(), third.getId(), 20);
 
         assertThat(posts).extracting(Post::getId).containsExactly(second.getId(), first.getId());
     }
@@ -96,13 +120,13 @@ class PostMapperTest {
         comment.setBody("nice!");
         commentMapper.insert(comment);
 
-        Post found = postMapper.findAllOrderByCreatedAtDesc(bob.getId()).get(0);
+        Post found = postMapper.findAllOrderByCreatedAtDesc(bob.getId(), null, 20).get(0);
 
         assertThat(found.getLikeCount()).isEqualTo(2);
         assertThat(found.getCommentCount()).isEqualTo(1);
         assertThat(found.isLikedByCurrentUser()).isTrue();
 
-        Post foundAsAliceFriend = postMapper.findAllOrderByCreatedAtDesc(alice.getId()).get(0);
+        Post foundAsAliceFriend = postMapper.findAllOrderByCreatedAtDesc(alice.getId(), null, 20).get(0);
         assertThat(foundAsAliceFriend.isLikedByCurrentUser()).isTrue();
     }
 
@@ -116,9 +140,23 @@ class PostMapperTest {
 
         followMapper.insert(alice.getId(), bob.getId());
 
-        List<Post> posts = postMapper.findFollowingOrderByCreatedAtDesc(alice.getId());
+        List<Post> posts = postMapper.findFollowingOrderByCreatedAtDesc(alice.getId(), null, 20);
 
         assertThat(posts).extracting(Post::getId).containsExactly(bobsPost.getId());
+    }
+
+    @Test
+    void findFollowingOrderByCreatedAtDesc_cursorOnlyReturnsOlderPosts() throws InterruptedException {
+        User alice = insertUser("alice");
+        User bob = insertUser("bob");
+        Post first = insertPost(bob.getId(), "first");
+        Post second = insertPost(bob.getId(), "second");
+
+        followMapper.insert(alice.getId(), bob.getId());
+
+        List<Post> posts = postMapper.findFollowingOrderByCreatedAtDesc(alice.getId(), second.getId(), 20);
+
+        assertThat(posts).extracting(Post::getId).containsExactly(first.getId());
     }
 
     @Test
