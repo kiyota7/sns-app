@@ -1,4 +1,4 @@
-import type { Comment, FollowResult, LikeResult, Post, Profile, StoredAuth, User, UserSearchResult } from './types'
+import type { Comment, FollowResult, LikeResult, Post, PostPage, Profile, StoredAuth, User, UserSearchResult } from './types'
 
 const STORAGE_KEY = 'sns-auth'
 
@@ -164,9 +164,17 @@ export const auth = {
   isLoggedIn: () => getAccessToken() !== null,
 }
 
-async function listPosts({ scope }: { scope?: string } = {}): Promise<Post[]> {
-  const url = scope ? `/api/posts?scope=${encodeURIComponent(scope)}` : '/api/posts'
-  const response = await authFetch(url)
+async function listPosts({
+  scope,
+  cursor,
+  limit,
+}: { scope?: string; cursor?: number; limit?: number } = {}): Promise<PostPage> {
+  const params = new URLSearchParams()
+  if (scope) params.set('scope', scope)
+  if (cursor != null) params.set('cursor', String(cursor))
+  if (limit != null) params.set('limit', String(limit))
+  const query = params.toString()
+  const response = await authFetch(query ? `/api/posts?${query}` : '/api/posts')
   if (!response.ok) {
     throw new Error(await parseErrorMessage(response))
   }

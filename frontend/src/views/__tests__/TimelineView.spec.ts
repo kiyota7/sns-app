@@ -29,9 +29,34 @@ function flushPromises() {
   return new Promise((resolve) => setTimeout(resolve))
 }
 
+function post(id: number, body: string): Post {
+  return { ...({ id, body } as unknown as Post) }
+}
+
+// TimelineViewが末尾のセンチネル要素を監視するのに使うIntersectionObserverを差し替え、
+// テストから交差(スクロールで末尾に到達した状態)を意図的に発火できるようにする。
+class FakeIntersectionObserver implements IntersectionObserver {
+  static instances: FakeIntersectionObserver[] = []
+  readonly root: Element | Document | null = null
+  readonly rootMargin: string = ''
+  readonly thresholds: ReadonlyArray<number> = []
+  constructor(private readonly callback: IntersectionObserverCallback) {
+    FakeIntersectionObserver.instances.push(this)
+  }
+  observe = vi.fn()
+  unobserve = vi.fn()
+  disconnect = vi.fn()
+  takeRecords = (): IntersectionObserverEntry[] => []
+  intersect() {
+    this.callback([{ isIntersecting: true } as IntersectionObserverEntry], this)
+  }
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   mockedAuth.getUser.mockReturnValue(ALICE)
+  FakeIntersectionObserver.instances = []
+  vi.stubGlobal('IntersectionObserver', FakeIntersectionObserver)
 })
 
 function renderView() {
@@ -42,28 +67,30 @@ function renderView() {
 
 describe('TimelineView', () => {
   it('loads the全体 timeline on mount', async () => {
-    mockedPosts.list.mockResolvedValueOnce([{ id: 1, body: 'hello' } as unknown as Post])
+    mockedPosts.list.mockResolvedValueOnce({ items: [post(1, 'hello')], hasMore: false })
     renderView()
     await flushPromises()
 
-    expect(mockedPosts.list).toHaveBeenCalledWith({})
+    expect(mockedPosts.list).toHaveBeenCalledWith({ scope: undefined, limit: 20 })
   })
 
   it('shows the empty state when there are no posts', async () => {
-    mockedPosts.list.mockResolvedValueOnce([])
+    mockedPosts.list.mockResolvedValueOnce({ items: [], hasMore: false })
     const { findByText } = renderView()
 
     expect(await findByText('まだ投稿がありません。')).toBeInTheDocument()
   })
 
   it('switches to the following tab and requests scope=following', async () => {
-    mockedPosts.list.mockResolvedValueOnce([]).mockResolvedValueOnce([])
+    mockedPosts.list
+      .mockResolvedValueOnce({ items: [], hasMore: false })
+      .mockResolvedValueOnce({ items: [], hasMore: false })
     const { getByRole, findByText } = renderView()
     await flushPromises()
 
     await fireEvent.click(getByRole('button', { name: 'フォロー中' }))
 
-    expect(mockedPosts.list).toHaveBeenLastCalledWith({ scope: 'following' })
+    expect(mockedPosts.list).toHaveBeenLastCalledWith({ scope: 'following', limit: 20 })
     // <br>で分割されているため、部分一致(exact: false)で取得する。
     expect(await findByText('フォロー中の利用者の投稿がありません。', { exact: false })).toBeInTheDocument()
   })
@@ -77,11 +104,11 @@ describe('TimelineView', () => {
   })
 
   it('composes a new post and prepends it to the "all" timeline', async () => {
-    mockedPosts.list.mockResolvedValueOnce([])
+    mockedPosts.list.mockResolvedValueOnce({ items: [], hasMore: false })
     const { getByPlaceholderText, getByRole, container } = renderView()
     await flushPromises()
 
-    const newPost = { id: 99, body: 'my new post' } as unknown as Post
+    const newPost = post(99, 'my new post')
     mockedPosts.create.mockResolvedValueOnce(newPost)
 
     await fireEvent.update(getByPlaceholderText('いまどうしてる?'), 'my new post')
@@ -94,7 +121,7 @@ describe('TimelineView', () => {
   })
 
   it('does not submit an empty post', async () => {
-    mockedPosts.list.mockResolvedValueOnce([])
+    mockedPosts.list.mockResolvedValueOnce({ items: [], hasMore: false })
     const { getByRole } = renderView()
     await flushPromises()
 
@@ -105,7 +132,7 @@ describe('TimelineView', () => {
   })
 
   it('logs out and navigates to login', async () => {
-    mockedPosts.list.mockResolvedValueOnce([])
+    mockedPosts.list.mockResolvedValueOnce({ items: [], hasMore: false })
     const { getByRole } = renderView()
     await flushPromises()
 
@@ -114,5 +141,29 @@ describe('TimelineView', () => {
 
     expect(mockedAuth.logout).toHaveBeenCalled()
     expect(push).toHaveBeenCalledWith({ name: 'login' })
+  })
+
+  it('loads the next page (using the last post id as cursor) when scrolled to the bottom', async () => {
+    mockedPosts.list.mockResolvedValueOnce({ items: [post(2, 'second'), post(1, 'first')], hasMore: true })
+    const { container } = renderView()
+    await flushPromises()
+
+    mockedPosts.list.mockResolvedValueOnce({ items: [post(0, 'zeroth')], hasMore: false })
+    FakeIntersectionObserver.instances[0]!.intersect()
+    await flushPromises()
+
+    expect(mockedPosts.list).toHaveBeenLastCalledWith({ scope: undefined, cursor: 1, limit: 20 })
+    expect(container.querySelectorAll('post-card-stub')).toHaveLength(3)
+  })
+
+  it('does not request another page once hasMore is false', async () => {
+    mockedPosts.list.mockResolvedValueOnce({ items: [post(1, 'only post')], hasMore: false })
+    renderView()
+    await flushPromises()
+
+    FakeIntersectionObserver.instances[0]!.intersect()
+    await flushPromises()
+
+    expect(mockedPosts.list).toHaveBeenCalledTimes(1)
   })
 })

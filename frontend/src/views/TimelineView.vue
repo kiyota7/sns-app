@@ -1,15 +1,19 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { auth, posts, AuthExpiredError } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import type { Post } from '../lib/types'
 import PostCard from '../components/PostCard.vue'
 
+const PAGE_SIZE = 20
+
 const router = useRouter()
 const user = ref(auth.getUser())
 const postList = ref<Post[]>([])
 const loading = ref(true)
+const loadingMore = ref(false)
+const hasMore = ref(false)
 const errorMessage = ref('')
 const activeTab = ref<'all' | 'following'>('all')
 
@@ -19,14 +23,33 @@ const composeImagePreview = ref('')
 const composeSubmitting = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 
-onMounted(() => loadTab('all'))
+const sentinel = ref<HTMLElement | null>(null)
+let observer: IntersectionObserver | null = null
+
+onMounted(() => {
+  loadTab('all')
+  observer = new IntersectionObserver((entries) => {
+    if (entries[0]?.isIntersecting) {
+      loadMore()
+    }
+  })
+  if (sentinel.value) {
+    observer.observe(sentinel.value)
+  }
+})
+
+onUnmounted(() => {
+  observer?.disconnect()
+})
 
 async function loadTab(tab: 'all' | 'following') {
   activeTab.value = tab
   loading.value = true
   errorMessage.value = ''
   try {
-    postList.value = await posts.list(tab === 'following' ? { scope: 'following' } : {})
+    const page = await posts.list({ scope: tab === 'following' ? 'following' : undefined, limit: PAGE_SIZE })
+    postList.value = page.items
+    hasMore.value = page.hasMore
   } catch (error) {
     if (error instanceof AuthExpiredError) {
       router.push({ name: 'login' })
@@ -35,6 +58,33 @@ async function loadTab(tab: 'all' | 'following') {
     errorMessage.value = getErrorMessage(error)
   } finally {
     loading.value = false
+  }
+}
+
+// IntersectionObserverが末尾のセンチネル要素の交差を検知するたびに呼ばれる。
+// 最後に表示している投稿のidをcursorとして次ページを取得し、一覧に追記する。
+async function loadMore() {
+  if (loading.value || loadingMore.value || !hasMore.value) return
+  const lastPost = postList.value[postList.value.length - 1]
+  if (!lastPost) return
+
+  loadingMore.value = true
+  try {
+    const page = await posts.list({
+      scope: activeTab.value === 'following' ? 'following' : undefined,
+      cursor: lastPost.id,
+      limit: PAGE_SIZE,
+    })
+    postList.value.push(...page.items)
+    hasMore.value = page.hasMore
+  } catch (error) {
+    if (error instanceof AuthExpiredError) {
+      router.push({ name: 'login' })
+      return
+    }
+    errorMessage.value = getErrorMessage(error)
+  } finally {
+    loadingMore.value = false
   }
 }
 
@@ -155,5 +205,7 @@ async function handleLogout() {
         @error="errorMessage = $event"
       />
     </template>
+    <p v-if="loadingMore">読み込み中...</p>
+    <div ref="sentinel"></div>
   </div>
 </template>
