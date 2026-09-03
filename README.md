@@ -216,13 +216,16 @@ npm test
 
 Vitest + Vue Test Utils(jsdom環境)でテストしている。E2Eテストは対象外。
 
-- **`src/lib/__tests__/`**: `api.js`の単体テスト。`fetch`をモック化し、認証ヘッダーの付与、
+- **`src/lib/__tests__/`**: `api.ts`の単体テスト。`fetch`をモック化し、認証ヘッダーの付与、
   アクセストークン失効時(401)のリフレッシュ→リトライ、エラーメッセージの解析などを検証する。
-  `format.js`の日時フォーマットも検証する
+  `format.ts`の日時フォーマットも検証する
 - **`src/components/__tests__/`・`src/views/__tests__/`**: 各UIコンポーネント・画面のテスト
   (`PostCard`・`LoginView`・`RegisterView`・`TimelineView`・`ProfileView`・`SearchView`・
-  `PostDetailView`)。`vue-router`・`src/lib/api.js`をモック化し、表示内容・フォーム送信時の
-  API呼び出し・エラー表示・認証失効時のログイン画面へのリダイレクトなどを検証する
+  `PostDetailView`)。`vue-router`・`src/lib/api.ts`をモック化し、表示内容・フォーム送信時の
+  API呼び出し・エラー表示・認証失効時のログイン画面へのリダイレクトなどを検証する。
+  `@testing-library/vue`を使い、CSSセレクタではなく`getByRole`・`getByLabelText`等の
+  ラベル/ロールベースのクエリで要素を取得している(アクセシブルネームが絵文字+数字のみになる
+  いいねボタン・コメント数リンクには、そのために`PostCard.vue`側へ`aria-label`を付与している)
 
 ## ディレクトリ構成
 

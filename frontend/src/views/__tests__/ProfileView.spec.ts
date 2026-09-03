@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount, RouterLinkStub, flushPromises } from '@vue/test-utils'
+import { render, fireEvent } from '@testing-library/vue'
+import { RouterLinkStub } from '@vue/test-utils'
 import ProfileView from '../ProfileView.vue'
 import { auth, users, AuthExpiredError } from '../../lib/api'
 import type { Profile, User } from '../../lib/types'
@@ -53,8 +54,8 @@ beforeEach(() => {
   mockedUsers.getPosts.mockResolvedValue([])
 })
 
-function mountView() {
-  return mount(ProfileView, {
+function renderView() {
+  return render(ProfileView, {
     global: { stubs: { RouterLink: RouterLinkStub, PostCard: true } },
   })
 }
@@ -62,33 +63,29 @@ function mountView() {
 describe('ProfileView (viewing another user)', () => {
   it('shows the follow button and hides the edit button', async () => {
     mockedUsers.getProfile.mockResolvedValueOnce(otherUserProfile)
-    const wrapper = mountView()
-    await flushPromises()
+    const { findByText, getByRole, queryByRole } = renderView()
 
-    expect(wrapper.text()).toContain('bob')
-    expect(wrapper.text()).toContain('フォローする')
-    expect(wrapper.text()).not.toContain('プロフィールを編集')
+    expect(await findByText('bob')).toBeInTheDocument()
+    expect(getByRole('button', { name: 'フォローする' })).toBeInTheDocument()
+    expect(queryByRole('button', { name: 'プロフィールを編集' })).not.toBeInTheDocument()
   })
 
   it('toggles follow state when the follow button is clicked', async () => {
     mockedUsers.getProfile.mockResolvedValueOnce(otherUserProfile)
     mockedUsers.toggleFollow.mockResolvedValueOnce({ following: true, followerCount: 1 })
-    const wrapper = mountView()
-    await flushPromises()
+    const { findByRole } = renderView()
 
-    await wrapper.find('.profile-actions button').trigger('click')
-    await flushPromises()
+    await fireEvent.click(await findByRole('button', { name: 'フォローする' }))
 
     expect(mockedUsers.toggleFollow).toHaveBeenCalledWith(2)
-    expect(wrapper.text()).toContain('フォロー解除')
+    expect(await findByRole('button', { name: 'フォロー解除' })).toBeInTheDocument()
   })
 
   it('redirects to login when the profile request expires auth', async () => {
     mockedUsers.getProfile.mockRejectedValueOnce(new AuthExpiredError())
-    mountView()
-    await flushPromises()
+    renderView()
 
-    expect(push).toHaveBeenCalledWith({ name: 'login' })
+    await vi.waitFor(() => expect(push).toHaveBeenCalledWith({ name: 'login' }))
   })
 })
 
@@ -99,52 +96,46 @@ describe('ProfileView (viewing own profile)', () => {
 
   it('shows an edit button instead of a follow button', async () => {
     mockedUsers.getProfile.mockResolvedValueOnce(selfProfile)
-    const wrapper = mountView()
-    await flushPromises()
+    const { findByRole, queryByRole } = renderView()
 
-    expect(wrapper.text()).toContain('プロフィールを編集')
-    expect(wrapper.text()).not.toContain('フォローする')
+    expect(await findByRole('button', { name: 'プロフィールを編集' })).toBeInTheDocument()
+    expect(queryByRole('button', { name: 'フォローする' })).not.toBeInTheDocument()
   })
 
   it('reveals the edit form with username/bio fields when clicked', async () => {
     mockedUsers.getProfile.mockResolvedValueOnce(selfProfile)
-    const wrapper = mountView()
-    await flushPromises()
+    const { findByRole, getByLabelText } = renderView()
 
-    await wrapper.find('.profile-actions button').trigger('click')
+    await fireEvent.click(await findByRole('button', { name: 'プロフィールを編集' }))
 
-    expect(wrapper.find('#edit-username').exists()).toBe(true)
-    expect(wrapper.find('#edit-bio').exists()).toBe(true)
+    expect(getByLabelText('ユーザー名')).toBeInTheDocument()
+    expect(getByLabelText('自己紹介')).toBeInTheDocument()
   })
 
   it('saves the edited profile and refreshes the current user via auth.me', async () => {
     mockedUsers.getProfile.mockResolvedValueOnce(selfProfile)
     mockedUsers.updateProfile.mockResolvedValueOnce({ ...selfProfile, username: 'alice2', bio: 'updated bio' })
     mockedAuth.me.mockResolvedValueOnce({ ...ALICE, username: 'alice2' })
-    const wrapper = mountView()
-    await flushPromises()
+    const { findByRole, getByLabelText, getByRole, findByText } = renderView()
 
-    await wrapper.find('.profile-actions button').trigger('click')
-    await wrapper.find('#edit-username').setValue('alice2')
-    await wrapper.find('#edit-bio').setValue('updated bio')
-    await wrapper.find('form.profile-edit-form').trigger('submit.prevent')
-    await flushPromises()
+    await fireEvent.click(await findByRole('button', { name: 'プロフィールを編集' }))
+    await fireEvent.update(getByLabelText('ユーザー名'), 'alice2')
+    await fireEvent.update(getByLabelText('自己紹介'), 'updated bio')
+    await fireEvent.click(getByRole('button', { name: '保存' }))
 
+    expect(await findByText('alice2')).toBeInTheDocument()
     expect(mockedUsers.updateProfile).toHaveBeenCalledWith({ username: 'alice2', bio: 'updated bio', avatar: null })
     expect(mockedAuth.me).toHaveBeenCalled()
-    expect(wrapper.text()).toContain('alice2')
   })
 
   it('cancel exits edit mode without saving', async () => {
     mockedUsers.getProfile.mockResolvedValueOnce(selfProfile)
-    const wrapper = mountView()
-    await flushPromises()
+    const { findByRole, getByRole, queryByLabelText } = renderView()
 
-    await wrapper.find('.profile-actions button').trigger('click')
-    const cancelButton = wrapper.findAll('button').find((b) => b.text() === 'キャンセル')
-    await cancelButton!.trigger('click')
+    await fireEvent.click(await findByRole('button', { name: 'プロフィールを編集' }))
+    await fireEvent.click(getByRole('button', { name: 'キャンセル' }))
 
-    expect(wrapper.find('#edit-username').exists()).toBe(false)
+    expect(queryByLabelText('ユーザー名')).not.toBeInTheDocument()
     expect(mockedUsers.updateProfile).not.toHaveBeenCalled()
   })
 })

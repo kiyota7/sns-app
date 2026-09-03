@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount, RouterLinkStub } from '@vue/test-utils'
+import { render, fireEvent } from '@testing-library/vue'
+import { RouterLinkStub } from '@vue/test-utils'
 import TimelineView from '../TimelineView.vue'
 import { auth, posts, AuthExpiredError } from '../../lib/api'
 import type { Post, User } from '../../lib/types'
@@ -33,8 +34,8 @@ beforeEach(() => {
   mockedAuth.getUser.mockReturnValue(ALICE)
 })
 
-function mountView() {
-  return mount(TimelineView, {
+function renderView() {
+  return render(TimelineView, {
     global: { stubs: { RouterLink: RouterLinkStub, PostCard: true } },
   })
 }
@@ -42,7 +43,7 @@ function mountView() {
 describe('TimelineView', () => {
   it('loads the全体 timeline on mount', async () => {
     mockedPosts.list.mockResolvedValueOnce([{ id: 1, body: 'hello' } as unknown as Post])
-    mountView()
+    renderView()
     await flushPromises()
 
     expect(mockedPosts.list).toHaveBeenCalledWith({})
@@ -50,28 +51,26 @@ describe('TimelineView', () => {
 
   it('shows the empty state when there are no posts', async () => {
     mockedPosts.list.mockResolvedValueOnce([])
-    const wrapper = mountView()
-    await flushPromises()
+    const { findByText } = renderView()
 
-    expect(wrapper.text()).toContain('まだ投稿がありません。')
+    expect(await findByText('まだ投稿がありません。')).toBeInTheDocument()
   })
 
   it('switches to the following tab and requests scope=following', async () => {
     mockedPosts.list.mockResolvedValueOnce([]).mockResolvedValueOnce([])
-    const wrapper = mountView()
+    const { getByRole, findByText } = renderView()
     await flushPromises()
 
-    const followingTab = wrapper.findAll('.tab-btn').find((b) => b.text() === 'フォロー中')
-    await followingTab!.trigger('click')
-    await flushPromises()
+    await fireEvent.click(getByRole('button', { name: 'フォロー中' }))
 
     expect(mockedPosts.list).toHaveBeenLastCalledWith({ scope: 'following' })
-    expect(wrapper.text()).toContain('フォロー中の利用者の投稿がありません。')
+    // <br>で分割されているため、部分一致(exact: false)で取得する。
+    expect(await findByText('フォロー中の利用者の投稿がありません。', { exact: false })).toBeInTheDocument()
   })
 
   it('redirects to login when the timeline request expires auth', async () => {
     mockedPosts.list.mockRejectedValueOnce(new AuthExpiredError())
-    mountView()
+    renderView()
     await flushPromises()
 
     expect(push).toHaveBeenCalledWith({ name: 'login' })
@@ -79,26 +78,27 @@ describe('TimelineView', () => {
 
   it('composes a new post and prepends it to the "all" timeline', async () => {
     mockedPosts.list.mockResolvedValueOnce([])
-    const wrapper = mountView()
+    const { getByPlaceholderText, getByRole, container } = renderView()
     await flushPromises()
 
     const newPost = { id: 99, body: 'my new post' } as unknown as Post
     mockedPosts.create.mockResolvedValueOnce(newPost)
 
-    await wrapper.find('textarea').setValue('my new post')
-    await wrapper.find('form.post-form').trigger('submit.prevent')
+    await fireEvent.update(getByPlaceholderText('いまどうしてる?'), 'my new post')
+    await fireEvent.click(getByRole('button', { name: '投稿' }))
     await flushPromises()
 
     expect(mockedPosts.create).toHaveBeenCalledWith({ body: 'my new post', image: null })
-    expect(wrapper.findAllComponents({ name: 'PostCard' })).toHaveLength(1)
+    // PostCardはstub化しているためロール/ラベルを持たず、生成されたstub要素の個数で確認する。
+    expect(container.querySelectorAll('post-card-stub')).toHaveLength(1)
   })
 
   it('does not submit an empty post', async () => {
     mockedPosts.list.mockResolvedValueOnce([])
-    const wrapper = mountView()
+    const { getByRole } = renderView()
     await flushPromises()
 
-    await wrapper.find('form.post-form').trigger('submit.prevent')
+    await fireEvent.click(getByRole('button', { name: '投稿' }))
     await flushPromises()
 
     expect(mockedPosts.create).not.toHaveBeenCalled()
@@ -106,10 +106,10 @@ describe('TimelineView', () => {
 
   it('logs out and navigates to login', async () => {
     mockedPosts.list.mockResolvedValueOnce([])
-    const wrapper = mountView()
+    const { getByRole } = renderView()
     await flushPromises()
 
-    await wrapper.find('button.btn-outline').trigger('click')
+    await fireEvent.click(getByRole('button', { name: 'ログアウト' }))
     await flushPromises()
 
     expect(mockedAuth.logout).toHaveBeenCalled()

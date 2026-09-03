@@ -101,10 +101,19 @@ async function handleDelete() {
       <div class="post-body">{{ post.body }}</div>
       <img v-if="post.imageUrl" class="image-preview" :src="post.imageUrl" alt="投稿画像" />
       <div class="post-actions">
-        <button type="button" class="action-btn" :class="{ liked }" :disabled="likeSubmitting" @click="toggleLike">
+        <button
+          type="button"
+          class="action-btn"
+          :class="{ liked }"
+          :disabled="likeSubmitting"
+          :aria-label="liked ? 'いいねを解除' : 'いいね'"
+          @click="toggleLike"
+        >
           {{ liked ? '♥' : '♡' }} {{ likeCount }}
         </button>
-        <RouterLink class="action-btn" :to="`/posts/${post.id}`">💬 {{ post.commentCount }}</RouterLink>
+        <RouterLink class="action-btn" :to="`/posts/${post.id}`" aria-label="コメント一覧を見る"
+          >💬 {{ post.commentCount }}</RouterLink
+        >
         <span v-if="post.userId === currentUser?.id" class="post-owner-menu">
           <button type="button" class="btn btn-small" @click="startEdit">編集</button>
           <button type="button" class="btn btn-small btn-danger" @click="handleDelete">削除</button>
