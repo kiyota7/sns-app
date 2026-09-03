@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount, RouterLinkStub } from '@vue/test-utils'
+import { render, fireEvent, cleanup } from '@testing-library/vue'
+import { RouterLinkStub } from '@vue/test-utils'
 import PostCard from '../PostCard.vue'
 import { posts } from '../../lib/api'
 import type { Post } from '../../lib/types'
@@ -27,11 +28,15 @@ const basePost: Post = {
   liked: false,
 }
 
-function mountCard(props: { post?: Post; currentUser?: { id: number; username: string } } = {}) {
-  return mount(PostCard, {
+function renderCard(props: { post?: Post; currentUser?: { id: number; username: string } } = {}) {
+  return render(PostCard, {
     props: { post: basePost, currentUser: { id: 10, username: 'alice' }, ...props },
     global: { stubs: { RouterLink: RouterLinkStub } },
   })
+}
+
+function flushPromises() {
+  return new Promise((resolve) => setTimeout(resolve))
 }
 
 beforeEach(() => {
@@ -40,58 +45,56 @@ beforeEach(() => {
 
 describe('PostCard', () => {
   it('renders the post body, author, and counts', () => {
-    const wrapper = mountCard()
+    // コメント数のリンクはRouterLinkStubがhrefを付与しないため、jsdom上でaria roleが
+    // "link"にならない(role/labelクエリの対象外)。テキストで取得する。
+    const { getByText, getByRole } = renderCard()
 
-    expect(wrapper.text()).toContain('hello world')
-    expect(wrapper.text()).toContain('alice')
-    expect(wrapper.text()).toContain('2')
-    expect(wrapper.text()).toContain('3')
+    expect(getByText('hello world')).toBeInTheDocument()
+    expect(getByText('alice')).toBeInTheDocument()
+    expect(getByRole('button', { name: 'いいね' })).toHaveTextContent('2')
+    expect(getByText('💬 3')).toBeInTheDocument()
   })
 
   it('shows the image when imageUrl is present', () => {
-    const wrapper = mountCard({ post: { ...basePost, imageUrl: '/uploads/cat.jpg' } })
+    const { getByRole } = renderCard({ post: { ...basePost, imageUrl: '/uploads/cat.jpg' } })
 
-    const img = wrapper.find('img.image-preview')
-    expect(img.exists()).toBe(true)
-    expect(img.attributes('src')).toBe('/uploads/cat.jpg')
+    expect(getByRole('img', { name: '投稿画像' })).toHaveAttribute('src', '/uploads/cat.jpg')
   })
 
   it('does not render an image when imageUrl is absent', () => {
-    const wrapper = mountCard()
+    const { queryByRole } = renderCard()
 
-    expect(wrapper.find('img.image-preview').exists()).toBe(false)
+    expect(queryByRole('img', { name: '投稿画像' })).not.toBeInTheDocument()
   })
 
   it('shows edit/delete controls only for the post owner', () => {
-    const ownerWrapper = mountCard({ currentUser: { id: 10, username: 'alice' } })
-    expect(ownerWrapper.text()).toContain('編集')
-    expect(ownerWrapper.text()).toContain('削除')
+    const owner = renderCard({ currentUser: { id: 10, username: 'alice' } })
+    expect(owner.getByRole('button', { name: '編集' })).toBeInTheDocument()
+    expect(owner.getByRole('button', { name: '削除' })).toBeInTheDocument()
+    cleanup()
 
-    const strangerWrapper = mountCard({ currentUser: { id: 99, username: 'bob' } })
-    expect(strangerWrapper.text()).not.toContain('編集')
+    const stranger = renderCard({ currentUser: { id: 99, username: 'bob' } })
+    expect(stranger.queryByRole('button', { name: '編集' })).not.toBeInTheDocument()
   })
 
   it('shows the filled heart and updated count after liking', async () => {
     mockedPosts.toggleLike.mockResolvedValueOnce({ liked: true, likeCount: 3 })
-    const wrapper = mountCard()
+    const { getByRole, findByRole } = renderCard()
 
-    await wrapper.find('.action-btn').trigger('click')
-    await flushPromises()
+    await fireEvent.click(getByRole('button', { name: 'いいね' }))
 
     expect(mockedPosts.toggleLike).toHaveBeenCalledWith(1)
-    expect(wrapper.find('.action-btn').text()).toContain('♥')
-    expect(wrapper.find('.action-btn').text()).toContain('3')
+    expect(await findByRole('button', { name: 'いいねを解除' })).toHaveTextContent('3')
   })
 
   it('flips liked/likeCount immediately, before the server responds', async () => {
     let resolveToggle!: (result: { liked: boolean; likeCount: number }) => void
     mockedPosts.toggleLike.mockReturnValueOnce(new Promise((resolve) => (resolveToggle = resolve)))
-    const wrapper = mountCard()
+    const { getByRole } = renderCard()
 
-    await wrapper.find('.action-btn').trigger('click')
+    await fireEvent.click(getByRole('button', { name: 'いいね' }))
 
-    expect(wrapper.find('.action-btn').text()).toContain('♥')
-    expect(wrapper.find('.action-btn').text()).toContain('3')
+    expect(getByRole('button', { name: 'いいねを解除' })).toHaveTextContent('3')
 
     resolveToggle({ liked: true, likeCount: 3 })
     await flushPromises()
@@ -99,73 +102,61 @@ describe('PostCard', () => {
 
   it('reverts liked/likeCount and emits an error event when liking fails', async () => {
     mockedPosts.toggleLike.mockRejectedValueOnce(new Error('like failed'))
-    const wrapper = mountCard()
+    const { getByRole, emitted } = renderCard()
 
-    await wrapper.find('.action-btn').trigger('click')
+    await fireEvent.click(getByRole('button', { name: 'いいね' }))
     await flushPromises()
 
-    expect(wrapper.emitted('error')).toEqual([['like failed']])
-    expect(wrapper.find('.action-btn').text()).toContain('♡')
-    expect(wrapper.find('.action-btn').text()).toContain('2')
+    expect(emitted().error).toEqual([['like failed']])
+    expect(getByRole('button', { name: 'いいね' })).toHaveTextContent('2')
   })
 
   it('enters edit mode, saves, and emits updated', async () => {
     const updatedPost = { ...basePost, body: 'edited body' }
     mockedPosts.update.mockResolvedValueOnce(updatedPost)
-    const wrapper = mountCard()
+    const { getByRole, emitted } = renderCard()
 
-    await wrapper.find('button.btn-small').trigger('click') // 編集
-    const textarea = wrapper.find('textarea.edit-post-textarea')
-    expect(textarea.exists()).toBe(true)
-    await textarea.setValue('edited body')
-
-    const saveButton = wrapper.findAll('button').find((b) => b.text() === '保存')
-    await saveButton!.trigger('click')
+    await fireEvent.click(getByRole('button', { name: '編集' }))
+    await fireEvent.update(getByRole('textbox'), 'edited body')
+    await fireEvent.click(getByRole('button', { name: '保存' }))
     await flushPromises()
 
     expect(mockedPosts.update).toHaveBeenCalledWith(1, { body: 'edited body' })
-    expect(wrapper.emitted('updated')).toEqual([[updatedPost]])
+    expect(emitted().updated).toEqual([[updatedPost]])
   })
 
   it('cancel exits edit mode without saving', async () => {
-    const wrapper = mountCard()
+    const { getByRole, queryByRole } = renderCard()
 
-    await wrapper.find('button.btn-small').trigger('click') // 編集
-    expect(wrapper.find('textarea.edit-post-textarea').exists()).toBe(true)
+    await fireEvent.click(getByRole('button', { name: '編集' }))
+    expect(getByRole('textbox')).toBeInTheDocument()
 
-    const cancelButton = wrapper.findAll('button').find((b) => b.text() === 'キャンセル')
-    await cancelButton!.trigger('click')
+    await fireEvent.click(getByRole('button', { name: 'キャンセル' }))
 
-    expect(wrapper.find('textarea.edit-post-textarea').exists()).toBe(false)
+    expect(queryByRole('textbox')).not.toBeInTheDocument()
     expect(mockedPosts.update).not.toHaveBeenCalled()
   })
 
   it('deletes the post after confirmation and emits deleted', async () => {
     vi.stubGlobal('confirm', vi.fn(() => true))
     mockedPosts.remove.mockResolvedValueOnce(undefined)
-    const wrapper = mountCard()
+    const { getByRole, emitted } = renderCard()
 
-    const deleteButton = wrapper.findAll('button').find((b) => b.text() === '削除')
-    await deleteButton!.trigger('click')
+    await fireEvent.click(getByRole('button', { name: '削除' }))
     await flushPromises()
 
     expect(mockedPosts.remove).toHaveBeenCalledWith(1)
-    expect(wrapper.emitted('deleted')).toEqual([[1]])
+    expect(emitted().deleted).toEqual([[1]])
   })
 
   it('does not delete when the confirmation is declined', async () => {
     vi.stubGlobal('confirm', vi.fn(() => false))
-    const wrapper = mountCard()
+    const { getByRole, emitted } = renderCard()
 
-    const deleteButton = wrapper.findAll('button').find((b) => b.text() === '削除')
-    await deleteButton!.trigger('click')
+    await fireEvent.click(getByRole('button', { name: '削除' }))
     await flushPromises()
 
     expect(mockedPosts.remove).not.toHaveBeenCalled()
-    expect(wrapper.emitted('deleted')).toBeUndefined()
+    expect(emitted().deleted).toBeUndefined()
   })
 })
-
-function flushPromises() {
-  return new Promise((resolve) => setTimeout(resolve))
-}
