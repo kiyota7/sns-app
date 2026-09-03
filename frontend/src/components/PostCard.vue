@@ -1,14 +1,20 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
 import { posts } from '../lib/api'
+import { getErrorMessage } from '../lib/errors'
 import { formatTime } from '../lib/format'
+import type { Post, User } from '../lib/types'
 
-const props = defineProps({
-  post: { type: Object, required: true },
-  currentUser: { type: Object, default: null },
-})
+const props = defineProps<{
+  post: Post
+  currentUser?: User | null
+}>()
 
-const emit = defineEmits(['updated', 'deleted', 'error'])
+const emit = defineEmits<{
+  updated: [post: Post]
+  deleted: [postId: number]
+  error: [message: string]
+}>()
 
 const editing = ref(false)
 const editBody = ref('')
@@ -25,7 +31,7 @@ async function toggleLike() {
     liked.value = result.liked
     likeCount.value = result.likeCount
   } catch (error) {
-    emit('error', error.message)
+    emit('error', getErrorMessage(error))
   } finally {
     likeSubmitting.value = false
   }
@@ -47,7 +53,7 @@ async function saveEdit() {
     emit('updated', updated)
     editing.value = false
   } catch (error) {
-    emit('error', error.message)
+    emit('error', getErrorMessage(error))
   }
 }
 
@@ -57,7 +63,7 @@ async function handleDelete() {
     await posts.remove(props.post.id)
     emit('deleted', props.post.id)
   } catch (error) {
-    emit('error', error.message)
+    emit('error', getErrorMessage(error))
   }
 }
 </script>

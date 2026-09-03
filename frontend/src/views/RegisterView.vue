@@ -1,7 +1,8 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { auth } from '../lib/api'
+import { getErrorMessage } from '../lib/errors'
 
 const router = useRouter()
 const username = ref('')
@@ -17,7 +18,7 @@ async function handleSubmit() {
     await auth.register({ username: username.value, email: email.value, password: password.value })
     router.push({ name: 'timeline' })
   } catch (error) {
-    errorMessage.value = error.message
+    errorMessage.value = getErrorMessage(error)
   } finally {
     submitting.value = false
   }

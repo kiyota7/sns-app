@@ -1,15 +1,17 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { auth, posts, comments, AuthExpiredError } from '../lib/api'
+import { getErrorMessage } from '../lib/errors'
 import { formatTime } from '../lib/format'
+import type { Comment, Post } from '../lib/types'
 import PostCard from '../components/PostCard.vue'
 
 const route = useRoute()
 const router = useRouter()
 const user = ref(auth.getUser())
-const post = ref(null)
-const commentList = ref([])
+const post = ref<Post | null>(null)
+const commentList = ref<Comment[]>([])
 const loading = ref(true)
 const errorMessage = ref('')
 
@@ -17,7 +19,7 @@ const commentBody = ref('')
 const commentSubmitting = ref(false)
 
 onMounted(async () => {
-  const postId = route.params.id
+  const postId = route.params.id as string
   try {
     const [postResult, commentsResult] = await Promise.all([posts.getById(postId), comments.list(postId)])
     post.value = postResult
@@ -27,7 +29,7 @@ onMounted(async () => {
       router.push({ name: 'login' })
       return
     }
-    errorMessage.value = error.message
+    errorMessage.value = getErrorMessage(error)
   } finally {
     loading.value = false
   }
@@ -37,7 +39,7 @@ function handleBack() {
   router.push({ name: 'timeline' })
 }
 
-function handlePostUpdated(updated) {
+function handlePostUpdated(updated: Post) {
   post.value = updated
 }
 
@@ -50,14 +52,14 @@ async function handleCommentSubmit() {
   errorMessage.value = ''
   commentSubmitting.value = true
   try {
-    const created = await comments.create(route.params.id, { body: commentBody.value })
+    const created = await comments.create(route.params.id as string, { body: commentBody.value })
     commentList.value.unshift(created)
     if (post.value) {
       post.value.commentCount += 1
     }
     commentBody.value = ''
   } catch (error) {
-    errorMessage.value = error.message
+    errorMessage.value = getErrorMessage(error)
   } finally {
     commentSubmitting.value = false
   }

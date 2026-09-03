@@ -1,6 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { auth } from '../lib/api'
 
+declare module 'vue-router' {
+  interface RouteMeta {
+    requiresAuth?: boolean
+  }
+}
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, RouterLinkStub, flushPromises } from '@vue/test-utils'
 import SearchView from '../SearchView.vue'
 import { auth, users, AuthExpiredError } from '../../lib/api'
+import type { User } from '../../lib/types'
 
 const push = vi.fn()
 
@@ -18,9 +19,14 @@ vi.mock('../../lib/api', async () => {
   }
 })
 
+const mockedAuth = vi.mocked(auth, { deep: true })
+const mockedUsers = vi.mocked(users, { deep: true })
+
+const ALICE: User = { id: 1, username: 'alice', email: 'alice@example.com', bio: null }
+
 beforeEach(() => {
   vi.clearAllMocks()
-  auth.getUser.mockReturnValue({ id: 1, username: 'alice' })
+  mockedAuth.getUser.mockReturnValue(ALICE)
 })
 
 function mountView() {
@@ -29,16 +35,16 @@ function mountView() {
 
 describe('SearchView', () => {
   it('loads all users (empty query) on mount', async () => {
-    users.search.mockResolvedValueOnce([{ id: 2, username: 'bob', following: false }])
+    mockedUsers.search.mockResolvedValueOnce([{ id: 2, username: 'bob', following: false }])
     const wrapper = mountView()
     await flushPromises()
 
-    expect(users.search).toHaveBeenCalledWith('')
+    expect(mockedUsers.search).toHaveBeenCalledWith('')
     expect(wrapper.text()).toContain('bob')
   })
 
   it('shows the empty state when no results are found', async () => {
-    users.search.mockResolvedValueOnce([])
+    mockedUsers.search.mockResolvedValueOnce([])
     const wrapper = mountView()
     await flushPromises()
 
@@ -46,7 +52,9 @@ describe('SearchView', () => {
   })
 
   it('searches with the trimmed query on submit', async () => {
-    users.search.mockResolvedValueOnce([]).mockResolvedValueOnce([{ id: 3, username: 'carol', following: false }])
+    mockedUsers.search
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ id: 3, username: 'carol', following: false }])
     const wrapper = mountView()
     await flushPromises()
 
@@ -54,25 +62,25 @@ describe('SearchView', () => {
     await wrapper.find('form.search-bar').trigger('submit.prevent')
     await flushPromises()
 
-    expect(users.search).toHaveBeenLastCalledWith('carol')
+    expect(mockedUsers.search).toHaveBeenLastCalledWith('carol')
     expect(wrapper.text()).toContain('carol')
   })
 
   it('toggles follow state for a search result', async () => {
-    users.search.mockResolvedValueOnce([{ id: 2, username: 'bob', following: false }])
-    users.toggleFollow.mockResolvedValueOnce({ following: true, followerCount: 1 })
+    mockedUsers.search.mockResolvedValueOnce([{ id: 2, username: 'bob', following: false }])
+    mockedUsers.toggleFollow.mockResolvedValueOnce({ following: true, followerCount: 1 })
     const wrapper = mountView()
     await flushPromises()
 
     await wrapper.find('.search-result-row button').trigger('click')
     await flushPromises()
 
-    expect(users.toggleFollow).toHaveBeenCalledWith(2)
+    expect(mockedUsers.toggleFollow).toHaveBeenCalledWith(2)
     expect(wrapper.find('.search-result-row button').text()).toBe('フォロー中')
   })
 
   it('redirects to login when the search request expires auth', async () => {
-    users.search.mockRejectedValueOnce(new AuthExpiredError())
+    mockedUsers.search.mockRejectedValueOnce(new AuthExpiredError())
     mountView()
     await flushPromises()
 
