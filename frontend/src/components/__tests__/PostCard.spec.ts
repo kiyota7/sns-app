@@ -83,7 +83,21 @@ describe('PostCard', () => {
     expect(wrapper.find('.action-btn').text()).toContain('3')
   })
 
-  it('emits an error event when liking fails', async () => {
+  it('flips liked/likeCount immediately, before the server responds', async () => {
+    let resolveToggle!: (result: { liked: boolean; likeCount: number }) => void
+    mockedPosts.toggleLike.mockReturnValueOnce(new Promise((resolve) => (resolveToggle = resolve)))
+    const wrapper = mountCard()
+
+    await wrapper.find('.action-btn').trigger('click')
+
+    expect(wrapper.find('.action-btn').text()).toContain('♥')
+    expect(wrapper.find('.action-btn').text()).toContain('3')
+
+    resolveToggle({ liked: true, likeCount: 3 })
+    await flushPromises()
+  })
+
+  it('reverts liked/likeCount and emits an error event when liking fails', async () => {
     mockedPosts.toggleLike.mockRejectedValueOnce(new Error('like failed'))
     const wrapper = mountCard()
 
@@ -91,6 +105,8 @@ describe('PostCard', () => {
     await flushPromises()
 
     expect(wrapper.emitted('error')).toEqual([['like failed']])
+    expect(wrapper.find('.action-btn').text()).toContain('♡')
+    expect(wrapper.find('.action-btn').text()).toContain('2')
   })
 
   it('enters edit mode, saves, and emits updated', async () => {

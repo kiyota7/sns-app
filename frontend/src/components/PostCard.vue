@@ -26,11 +26,21 @@ const likeSubmitting = ref(false)
 async function toggleLike() {
   if (likeSubmitting.value) return
   likeSubmitting.value = true
+
+  // 楽観的UI更新: サーバーの応答を待たずに見た目を先に反転させ、
+  // エラー時はクリック前の状態に戻す。
+  const previousLiked = liked.value
+  const previousLikeCount = likeCount.value
+  liked.value = !previousLiked
+  likeCount.value = previousLiked ? previousLikeCount - 1 : previousLikeCount + 1
+
   try {
     const result = await posts.toggleLike(props.post.id)
     liked.value = result.liked
     likeCount.value = result.likeCount
   } catch (error) {
+    liked.value = previousLiked
+    likeCount.value = previousLikeCount
     emit('error', getErrorMessage(error))
   } finally {
     likeSubmitting.value = false
