@@ -1,15 +1,15 @@
-// smoke.js: 疎通確認用の最小構成テスト。
+// smoke.ts: 疎通確認用の最小構成テスト。
 //
 // 目的は「これから重い負荷テストを実行して大丈夫か」の事前チェックであり、
-// レイテンシの特性を見るものではない。そのためシード投入(seed.js)を
+// レイテンシの特性を見るものではない。そのためシード投入(seed.ts)を
 // 前提とせず、実行のたびに専用のテストユーザーを1人登録して使う。
 //
-// 実行: k6 run perf-tests/scenarios/smoke.js
+// 実行: k6 run perf-tests/scenarios/smoke.ts
 import { check, sleep } from 'k6';
-import { assertLocalOnly, BASE_URL } from '../config/environment.js';
-import { postJson, getJson, postMultipart, deleteReq } from '../lib/http.js';
-import { registerOrLogin } from '../lib/auth.js';
-import { randomPostBody, randomCommentBody } from '../lib/data.js';
+import { assertLocalOnly, BASE_URL } from '../config/environment.ts';
+import { postJson, getJson, postMultipart, deleteReq } from '../lib/http.ts';
+import { registerOrLogin } from '../lib/auth.ts';
+import { randomPostBody, randomCommentBody } from '../lib/data.ts';
 
 export const options = {
   vus: Number(__ENV.VUS) || 2,
@@ -20,11 +20,11 @@ export const options = {
   },
 };
 
-export function setup() {
+export function setup(): void {
   assertLocalOnly();
 }
 
-export default function () {
+export default function (): void {
   const username = `perf_smoke_${__VU}_${Date.now()}`;
   const email = `${username}@perf.test`;
   const auth = registerOrLogin(BASE_URL, username, email, 'Password123!');
@@ -44,7 +44,7 @@ export default function () {
     sleep(1);
     return;
   }
-  const postId = createRes.json().id;
+  const postId = (createRes.json() as { id: number }).id;
 
   check(getJson(BASE_URL, `/api/posts/${postId}`, token, 'GET /api/posts/:id'), {
     'get post: status 200': (r) => r.status === 200,

@@ -1,4 +1,4 @@
-// write-contention.js: SQLite単一ライター特性を狙い撃ちする、このアプリ特有の
+// write-contention.ts: SQLite単一ライター特性を狙い撃ちする、このアプリ特有の
 // シナリオ。
 //
 // 同じ「バズった投稿」へのいいね/コメント、同じパワーユーザーへのフォローを
@@ -14,14 +14,14 @@
 //
 // 事前に `perf-tests/seed/run-seed.sh` でシード投入しておくこと。
 //
-// 実行: k6 run perf-tests/scenarios/write-contention.js
-//       VUS=25 DURATION=2m k6 run perf-tests/scenarios/write-contention.js
+// 実行: k6 run perf-tests/scenarios/write-contention.ts
+//       VUS=25 DURATION=2m k6 run perf-tests/scenarios/write-contention.ts
 import { check, sleep } from 'k6';
 import { Counter } from 'k6/metrics';
-import { assertLocalOnly, BASE_URL } from '../config/environment.js';
-import { postJson } from '../lib/http.js';
-import { loginAsSeededUser } from '../lib/auth.js';
-import { requireManifest, weightedPick, randomCommentBody } from '../lib/data.js';
+import { assertLocalOnly, BASE_URL } from '../config/environment.ts';
+import { postJson, K6Response } from '../lib/http.ts';
+import { loginAsSeededUser, Session } from '../lib/auth.ts';
+import { requireManifest, weightedPick, randomCommentBody } from '../lib/data.ts';
 
 const manifest = requireManifest();
 if (!manifest.viralPosts || manifest.viralPosts.length === 0) {
@@ -56,16 +56,20 @@ export const options = {
   },
 };
 
-let session = null;
+export function setup(): void {
+  assertLocalOnly();
+}
 
-function ensureSession() {
+let session: Session | null = null;
+
+function ensureSession(): Session {
   if (!session) {
     session = loginAsSeededUser(BASE_URL, manifest.userCount);
   }
   return session;
 }
 
-function recordOutcome(res, endpointTag) {
+function recordOutcome(res: K6Response, endpointTag: string): boolean {
   const ok = check(res, { [`${endpointTag}: status < 500`]: (r) => r.status < 500 });
   if (res.status >= 500) {
     serverErrors.add(1, { endpoint: endpointTag });
@@ -73,10 +77,12 @@ function recordOutcome(res, endpointTag) {
   return ok;
 }
 
-export default function () {
+type Action = 'like' | 'follow' | 'comment';
+
+export default function (): void {
   const { accessToken } = ensureSession();
 
-  const action = weightedPick([
+  const action = weightedPick<Action>([
     ['like', 0.5],
     ['follow', 0.3],
     ['comment', 0.2],

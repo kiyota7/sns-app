@@ -3,31 +3,56 @@
 //
 // 注意: k6 の open() はinitコンテキスト(モジュール読み込み時)でのみ呼べるため、
 // ここではトップレベルで一度だけ読み込む。ファイルが無い場合は null のまま返し、
-// 呼び出し側(各シナリオの setup())で「seed.js を先に実行してください」という
+// 呼び出し側(各シナリオの setup())で「seed.ts を先に実行してください」という
 // 分かりやすいエラーを出す。
-let manifest = null;
+
+export interface ViralPost {
+  postId: number;
+  authorId: number;
+  authorUsername: string;
+}
+
+export interface BusiestPowerUser {
+  id: number;
+  username: string;
+  postCount: number;
+}
+
+export interface SeedManifest {
+  generatedAt: string;
+  baseUrl: string;
+  userCount: number;
+  powerUserCount: number;
+  seedPassword: string;
+  allUserIds: number[];
+  viralPosts: ViralPost[];
+  busiestPowerUser: BusiestPowerUser | null;
+  sampleRegularUserEmails: string[];
+}
+
+let manifest: SeedManifest | null = null;
 try {
-  manifest = JSON.parse(open('../results/seed-manifest.json'));
+  manifest = JSON.parse(open('../results/seed-manifest.json')) as SeedManifest;
 } catch (e) {
   manifest = null;
 }
 
-export function getManifest() {
+export function getManifest(): SeedManifest | null {
   return manifest;
 }
 
-export function requireManifest() {
+export function requireManifest(): SeedManifest {
   if (!manifest) {
     throw new Error(
       '[perf-tests] results/seed-manifest.json が見つかりません。' +
-        '先に `k6 run perf-tests/seed/seed.js` を実行してデータを投入してください。'
+        '先に `perf-tests/seed/run-seed.sh` を実行してデータを投入してください。'
     );
   }
   return manifest;
 }
 
 // 重み付きランダム選択。例: weightedPick([['a', 0.5], ['b', 0.3], ['c', 0.2]])
-export function weightedPick(entries) {
+export function weightedPick<T>(entries: Array<[T, number]>): T {
   const total = entries.reduce((sum, [, weight]) => sum + weight, 0);
   let r = Math.random() * total;
   for (const [value, weight] of entries) {
@@ -37,7 +62,7 @@ export function weightedPick(entries) {
   return entries[entries.length - 1][0];
 }
 
-export function randomInt(min, max) {
+export function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
@@ -46,7 +71,7 @@ export function randomInt(min, max) {
 // UNIQUE制約かつAPIがトグル方式のため、同じ相手を2回選ぶと「いいねした→
 // 取り消した」になり、意図した件数より少なく登録されてしまう。それを防ぐための
 // 部分Fisher-Yatesシャッフル。
-export function randomDistinctIndices(poolSize, count) {
+export function randomDistinctIndices(poolSize: number, count: number): number[] {
   const n = Math.min(count, poolSize);
   const indices = Array.from({ length: poolSize }, (_, i) => i);
   for (let i = 0; i < n; i++) {
@@ -58,7 +83,7 @@ export function randomDistinctIndices(poolSize, count) {
   return indices.slice(0, n);
 }
 
-export function randomPostBody() {
+export function randomPostBody(): string {
   const topics = [
     '今日のランチは', '週末は', '最近ハマっているのは', 'ふと思ったんだけど',
     '仕事終わりに', '新しく始めた趣味は', '天気がいいので', '久しぶりに',
@@ -72,7 +97,7 @@ export function randomPostBody() {
   return `${topic}${tail} (perf-test ${Date.now()}-${randomInt(0, 999999)})`;
 }
 
-export function randomCommentBody() {
+export function randomCommentBody(): string {
   const comments = [
     'いいですね!', 'わかります。', 'それは気になる。', 'ナイスです。',
     '今度試してみます。', 'コメント失礼します。', 'すごい!', 'いいねしました。',

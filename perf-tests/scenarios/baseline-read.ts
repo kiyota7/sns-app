@@ -1,4 +1,4 @@
-// baseline-read.js: 読み取り中心の負荷テスト。
+// baseline-read.ts: 読み取り中心の負荷テスト。
 //
 // タイムライン閲覧・プロフィール閲覧・ユーザー検索など、実際のSNS利用で
 // 最も頻度の高い「読み取り」操作を重み付きで混ぜて実行し、読み取りパスの
@@ -6,13 +6,13 @@
 //
 // 事前に `perf-tests/seed/run-seed.sh` でシード投入しておくこと。
 //
-// 実行: k6 run perf-tests/scenarios/baseline-read.js
-//       VUS=30 DURATION=3m k6 run perf-tests/scenarios/baseline-read.js
+// 実行: k6 run perf-tests/scenarios/baseline-read.ts
+//       VUS=30 DURATION=3m k6 run perf-tests/scenarios/baseline-read.ts
 import { check, sleep } from 'k6';
-import { assertLocalOnly, BASE_URL } from '../config/environment.js';
-import { getJson } from '../lib/http.js';
-import { loginAsSeededUser } from '../lib/auth.js';
-import { requireManifest, randomInt, weightedPick } from '../lib/data.js';
+import { assertLocalOnly, BASE_URL } from '../config/environment.ts';
+import { getJson, K6Response } from '../lib/http.ts';
+import { loginAsSeededUser, Session } from '../lib/auth.ts';
+import { requireManifest, randomInt, weightedPick } from '../lib/data.ts';
 
 const manifest = requireManifest();
 
@@ -44,23 +44,23 @@ export const options = {
 // VUごとに一度だけログインし、以降のイテレーションで使い回す
 // (毎イテレーション再ログインするとBCryptコストが支配的になり、
 // 読み取りパスの純粋な計測にならないため)。
-let session = null;
+let session: Session | null = null;
 
-function ensureSession() {
+function ensureSession(): Session {
   if (!session) {
     session = loginAsSeededUser(BASE_URL, manifest.userCount);
   }
   return session;
 }
 
-function browseTimelineAll(token) {
+function browseTimelineAll(token: string): K6Response {
   const res = getJson(BASE_URL, '/api/posts?scope=all&limit=20', token, 'GET /api/posts');
   check(res, { 'timeline(all): status 200': (r) => r.status === 200 });
   return res;
 }
 
-function browseTimelineFollowing(token) {
-  let cursor = null;
+function browseTimelineFollowing(token: string): void {
+  let cursor: number | null = null;
   for (let page = 0; page < 3; page++) {
     const path = cursor
       ? `/api/posts?scope=following&limit=20&cursor=${cursor}`
@@ -68,19 +68,19 @@ function browseTimelineFollowing(token) {
     const res = getJson(BASE_URL, path, token, 'GET /api/posts (following)');
     const ok = check(res, { 'timeline(following): status 200': (r) => r.status === 200 });
     if (!ok) break;
-    const body = res.json();
+    const body = res.json() as { items: { id: number }[]; hasMore: boolean };
     if (!body.hasMore || body.items.length === 0) break;
     cursor = body.items[body.items.length - 1].id;
   }
 }
 
-function viewRandomProfile(token) {
+function viewRandomProfile(token: string): void {
   const userId = manifest.allUserIds[randomInt(0, manifest.allUserIds.length - 1)];
   const res = getJson(BASE_URL, `/api/users/${userId}`, token, 'GET /api/users/:id');
   check(res, { 'profile: status 200': (r) => r.status === 200 });
 }
 
-function searchUsers(token) {
+function searchUsers(token: string): void {
   // 既知のシード済みユーザー名に部分一致する接頭辞と、ヒットしにくい1文字を
   // 混ぜることで、ヒットあり/なし両方のクエリパターンを再現する。
   const prefixes = ['perf_user_0', 'perf_power_0', 'perf_user_1', 'a', 'e'];
@@ -89,20 +89,26 @@ function searchUsers(token) {
   check(res, { 'search: status 200': (r) => r.status === 200 });
 }
 
-function viewRandomPostDetail(token) {
+function viewRandomPostDetail(token: string): void {
   const res = browseTimelineAll(token);
   if (res.status !== 200) return;
-  const items = res.json().items;
+  const items = (res.json() as { items: { id: number }[] }).items;
   if (items.length === 0) return;
   const postId = items[randomInt(0, items.length - 1)].id;
   const detail = getJson(BASE_URL, `/api/posts/${postId}`, token, 'GET /api/posts/:id');
   check(detail, { 'post detail: status 200': (r) => r.status === 200 });
 }
 
-export default function () {
+type Action = 'timeline_all' | 'timeline_following' | 'profile' | 'search' | 'post_detail';
+
+export function setup(): void {
+  assertLocalOnly();
+}
+
+export default function (): void {
   const { accessToken } = ensureSession();
 
-  const action = weightedPick([
+  const action = weightedPick<Action>([
     ['timeline_all', 0.4],
     ['timeline_following', 0.2],
     ['profile', 0.2],

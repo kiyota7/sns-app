@@ -7,11 +7,11 @@
 // assertLocalOnly() が例外を投げて実行を止める。
 // 各シナリオ・シードスクリプトの setup() で必ず呼び出すこと。
 
-export const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
+export const BASE_URL: string = (__ENV.BASE_URL as string) || 'http://localhost:8080';
 
-const ALLOWED_HOST_PREFIXES = ['http://localhost', 'http://127.0.0.1'];
+const ALLOWED_HOST_PREFIXES: string[] = ['http://localhost', 'http://127.0.0.1'];
 
-export function assertLocalOnly() {
+export function assertLocalOnly(): void {
   const isAllowed = ALLOWED_HOST_PREFIXES.some((prefix) => BASE_URL.startsWith(prefix));
   if (!isAllowed) {
     throw new Error(
@@ -23,8 +23,8 @@ export function assertLocalOnly() {
 }
 
 // シナリオ共通のデフォルト(各シナリオファイル側で ENV による個別上書きも可能)
-export const DEFAULT_VUS = Number(__ENV.VUS) || undefined; // undefined なら各シナリオの既定値を使う
-export const DEFAULT_DURATION = __ENV.DURATION || undefined;
+export const DEFAULT_VUS: number | undefined = Number(__ENV.VUS) || undefined; // undefined なら各シナリオの既定値を使う
+export const DEFAULT_DURATION: string | undefined = __ENV.DURATION || undefined;
 
 // シード済みテストユーザーの共通パスワード(テスト専用の固定値。本物の秘密情報ではない)
-export const SEED_PASSWORD = 'Password123!';
+export const SEED_PASSWORD: string = 'Password123!';
