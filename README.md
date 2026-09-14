@@ -274,6 +274,21 @@ Vitest + Vue Test Utils(jsdom環境)でテストしている。E2E(実バック�
 - [x] DBスキーマ管理をFlywayによるバージョン管理されたマイグレーションに移行(手書きの起動時ALTER処理を廃止)
 - [x] フロントエンドをTypeScriptに全面移行(`vue-tsc`による型チェックを`npm run build`に統合)
 - [x] タイムラインにカーソル(id)ベースのページネーションと無限スクロールを実装
+- [x] GitHub ActionsによるCI導入(バックエンド/フロントエンドのテスト・静的解析・E2E)
+
+## CI
+
+`.github/workflows/ci.yml`により、PR作成時・`main`へのマージ時に以下が自動実行される。
+
+- **Backend / test**: `mvn test`(サービス単体・MyBatisマッパーDB統合・コントローラー統合)
+- **Backend / static analysis**: SpotBugsによる静的解析(`mvn compile spotbugs:check`)
+- **Frontend / test**: `npm test`(Vitest)
+- **Frontend / static analysis**: ESLint(`npm run lint`)+ 型チェック(`npm run type-check`)
+- **E2E**: 実バックエンド・実ブラウザ(Chromium)によるPlaywright E2Eテスト
+  (`frontend/e2e/README.md`参照)
+
+`perf-tests/`(k6によるパフォーマンステスト)は引き続きCIの対象外で、ローカルから
+手動実行する運用のまま(`perf-tests/README.md`参照)。
 
 ## 開発ワークフロー
 

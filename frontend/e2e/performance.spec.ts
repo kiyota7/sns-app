@@ -40,7 +40,7 @@ test('ブラウザパフォーマンス計測(記録専用)', async ({ page }) =
   navigation.push(await captureNavigationTiming(page, 'login-page (cold)'))
   paint.push(await capturePaintTiming(page, 'login-page (cold)'))
 
-  const user = await registerAndLogin(page)
+  await registerAndLogin(page)
 
   // --- 2. ログイン済み状態での /timeline への実ナビゲーション ---
   // (vue-routerのクライアントサイド遷移はNavigation Timingに載らないため、

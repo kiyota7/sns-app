@@ -1,7 +1,8 @@
 # e2e — RaiseTimeLine フロントエンド E2Eテスト
 
 [Playwright](https://playwright.dev/) を使った、**実バックエンド・実ブラウザ(Chromium)**での
-E2Eテスト一式です。CIには組み込まれておらず、ローカルから手動で実行する運用です。
+E2Eテスト一式です。[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)により
+PRごとにCI上で自動実行されるほか、ローカルからも同じ手順で実行できます。
 
 ## 1. これは何か / 何でないか
 
@@ -28,6 +29,11 @@ npx playwright install chromium
 `npm install`だけでは`@playwright/test`パッケージが入るだけで、実際に操作する
 Chromium本体はダウンロードされません。**`npx playwright install chromium`は
 別途、明示的に実行する必要があります**(初回のみ)。
+
+(CI(`.github/workflows/ci.yml`)では、素のUbuntuランナーにheadless Chromiumに
+必要なシステムライブラリが無いため、`npx playwright install --with-deps chromium`
+を実行しています。ローカルの開発環境では通常システムライブラリが揃っているため、
+上記の`--with-deps`無しのコマンドで問題ありません。)
 
 ## 3. サーバーの起動
 
@@ -90,9 +96,9 @@ npx playwright show-report
 
 `performance.spec.ts`はブラウザパフォーマンスの**記録専用**テストです。
 `expect().toBeLessThan()`のような失敗しきい値は一切設けていません
-(CIのような安定した実行環境が無く、開発者ごとのマシン差が大きいローカル環境で
-厳密な合否判定をしても、値の根拠が主観的になりやすいためです。`perf-tests`の
-k6スイートと同じ考え方です)。
+(CI上のGitHub Actionsランナーも、開発者ごとのローカルマシンも、負荷や
+スペックが実行のたびに変動する共有環境である以上、厳密な合否判定をしても
+値の根拠が主観的になりやすいためです。`perf-tests`のk6スイートと同じ考え方です)。
 
 ```bash
 npx playwright test performance.spec.ts
@@ -126,7 +132,10 @@ UX上の関心事は十分カバーできると判断したためです。特定
 無限スクロールを繰り返した際のメモリリーク調査)で必要になった場合は、
 上記の方法でCDPセッションを開いて個別に追加してください。
 
-## 8. ローカル限定であることの再掲
+## 8. CIとローカルの両方で実行される
 
-このスイートは`http://localhost:5173`と`http://localhost:8080`だけを対象とし、
-このリポジトリにはCIの仕組み自体がありません(`perf-tests`と同様)。
+このスイートはGitHub Actions CI(PRごと・`main`へのマージ時に自動実行)と、
+ローカル(本ドキュメントの手順)の両方で実行されます。ローカルでの実行方法・
+設定自体に、CI導入による変更はありません。対象は常に
+`http://localhost:5173`と`http://localhost:8080`のみで、CI上でもこの2つの
+URLに対して実行しています(本番やその他のリモート環境を対象にすることはありません)。
