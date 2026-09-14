@@ -1,6 +1,6 @@
 import { fileURLToPath, URL } from 'node:url'
 
-import { defineConfig } from 'vitest/config'
+import { defineConfig, configDefaults } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
@@ -27,5 +27,9 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test-setup.ts'],
+    // e2e/ はPlaywright(playwright.config.ts)専用のディレクトリ。除外しないと
+    // Vitestのデフォルトincludeがe2e/*.spec.tsも拾ってしまい、jsdom環境では
+    // 動かないPlaywrightのAPIを呼んでnpm testが壊れる。
+    exclude: [...configDefaults.exclude, 'e2e/**'],
   },
 })

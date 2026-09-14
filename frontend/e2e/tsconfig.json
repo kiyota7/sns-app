@@ -1,0 +1,9 @@
+{
+  "extends": "@vue/tsconfig/tsconfig.json",
+  "include": ["**/*.ts"],
+  "compilerOptions": {
+    "types": ["node", "@playwright/test"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler"
+  }
+}

@@ -226,7 +226,7 @@ cd frontend
 npm test
 ```
 
-Vitest + Vue Test Utils(jsdom環境)でテストしている。E2Eテストは対象外。
+Vitest + Vue Test Utils(jsdom環境)でテストしている。E2E(実バックエンド・実ブラウザでの結合的な動作確認)はPlaywrightで別途行っている。詳細は`frontend/e2e/README.md`を参照。
 
 - **`src/lib/__tests__/`**: `api.ts`の単体テスト。`fetch`をモック化し、認証ヘッダーの付与、
   アクセストークン失効時(401)のリフレッシュ→リトライ、エラーメッセージの解析などを検証する。
