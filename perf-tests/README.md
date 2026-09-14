@@ -15,7 +15,7 @@
   ユーザーに直接影響が出ます。
   - 安全策として、`BASE_URL` が `http://localhost` または `http://127.0.0.1` で
     始まらない場合、各スクリプトは `setup()` の時点で例外を投げて実行を
-    中断します(`perf-tests/config/environment.js` の `assertLocalOnly()`)。
+    中断します(`perf-tests/config/environment.ts` の `assertLocalOnly()`)。
     ただし、これはあくまで最後の砦です。**`BASE_URL` を手で書き換えて
     本番のURLを指定するようなことは絶対にしないでください。**
 
@@ -50,8 +50,8 @@ mvn spring-boot:run
 
 ## 4. データのシーディング
 
-パフォーマンステストの多くのシナリオ(特に `unbounded-results.js` や
-`write-contention.js`)は、DBにある程度のデータ量が無いと意味のある結果になりません。
+パフォーマンステストの多くのシナリオ(特に `unbounded-results.ts` や
+`write-contention.ts`)は、DBにある程度のデータ量が無いと意味のある結果になりません。
 必ず先にシードスクリプトを実行してください。
 
 ```bash
@@ -63,10 +63,10 @@ cd perf-tests/seed
   コメント150件・いいね40件の「バズった投稿」)を作成します。ローカル環境で
   数分程度で完了します(登録時のBCryptハッシュ化コストが支配的です)。
 - より大きなデータ量で試したい場合は環境変数で調整できます
-  (`perf-tests/seed/seed-config.js` 参照。例: `SEED_USER_COUNT=200 ./run-seed.sh`)。
+  (`perf-tests/seed/seed-config.ts` 参照。例: `SEED_USER_COUNT=200 ./run-seed.sh`)。
 - 完了すると `perf-tests/results/seed-manifest.json` が生成されます。各シナリオは
   ここに書かれた「バズった投稿のID」「パワーユーザーのID」等を参照するので、
-  **`k6 run seed.js` を直接実行せず、必ず `run-seed.sh` 経由で実行してください**
+  **`k6 run seed.ts` を直接実行せず、必ず `run-seed.sh` 経由で実行してください**
   (k6のスクリプト自体はサンドボックスの制約でファイルを書き出せないため、
   `run-seed.sh` が標準出力からマニフェストを拾ってファイル化しています)。
 - 既存のシードデータをやり直したい場合は、バックエンドを止めてから
@@ -75,27 +75,27 @@ cd perf-tests/seed
 
 ## 5. シナリオの実行
 
-推奨する実行順序: `smoke.js` → `baseline-read.js` → `write-contention.js` →
-`unbounded-results.js`。いきなり一番重いシナリオを流すのではなく、軽いものから
+推奨する実行順序: `smoke.ts` → `baseline-read.ts` → `write-contention.ts` →
+`unbounded-results.ts`。いきなり一番重いシナリオを流すのではなく、軽いものから
 順に「バックエンドがちゃんと応答しているか」を確認しながら進めてください。
 
 ```bash
 # 1. 疎通確認(シード不要)
-k6 run perf-tests/scenarios/smoke.js
+k6 run perf-tests/scenarios/smoke.ts
 
 # 2. 読み取り中心の負荷(ベースライン計測)
-k6 run perf-tests/scenarios/baseline-read.js
-VUS=30 DURATION=3m k6 run perf-tests/scenarios/baseline-read.js   # VU数・時間を変える例
+k6 run perf-tests/scenarios/baseline-read.ts
+VUS=30 DURATION=3m k6 run perf-tests/scenarios/baseline-read.ts   # VU数・時間を変える例
 
 # 3. 同時書き込み負荷(SQLite競合の確認。このアプリで一番重要なシナリオ)
-k6 run perf-tests/scenarios/write-contention.js
+k6 run perf-tests/scenarios/write-contention.ts
 
 # 4. ページネーション無しエンドポイントの負荷
-k6 run perf-tests/scenarios/unbounded-results.js
+k6 run perf-tests/scenarios/unbounded-results.ts
 ```
 
 各スクリプトの `VUS` / `DURATION` 環境変数でVU数・実行時間を上書きできます
-(`baseline-read.js` の `DURATION` は「目標VU数を維持する時間」で、前後に
+(`baseline-read.ts` の `DURATION` は「目標VU数を維持する時間」で、前後に
 ランプアップ20秒・ランプダウン10秒が付くため、実際の総実行時間は
 `DURATION + 30秒` 程度になります)。
 デフォルト値は、本番想定のt3.micro(2vCPUバースト・1GB RAM)と、ローカルPC上で
@@ -103,7 +103,7 @@ JVMバックエンドとk6自身が同居する制約を踏まえた控えめな
 ような値は、アプリではなくローカルマシン自体のリソース不足によるノイズを
 生むだけなので推奨しません。
 
-`spike.js` / `soak.js` は今回は未実装のスタブです(ファイル内コメント参照)。
+`spike.ts` / `soak.ts` は今回は未実装のスタブです(ファイル内コメント参照)。
 
 ## 6. 結果の読み方
 
@@ -116,7 +116,7 @@ k6標準の実行後サマリー(標準出力)を見れば十分です。`http_r
 
 ```bash
 k6 run --out json=perf-tests/results/baseline-read-$(date +%Y%m%d-%H%M%S).json \
-  perf-tests/scenarios/baseline-read.js
+  perf-tests/scenarios/baseline-read.ts
 ```
 
 `perf-tests/results/` はgitignore対象なので、コミットせず手元だけで比較に使ってください
@@ -124,7 +124,7 @@ k6 run --out json=perf-tests/results/baseline-read-$(date +%Y%m%d-%H%M%S).json \
 (`K6_WEB_DASHBOARD=true k6 run ...`)を使うこともできますが、ブラウザ表示が
 必要になるのでオプション扱いです。
 
-### `write-contention.js` の見方(重要)
+### `write-contention.ts` の見方(重要)
 
 このシナリオは**エラーが出ないことを確認するテストではありません**。SQLiteは
 単一ライターのため、同時書き込み負荷をかけると一定数の失敗が出ること自体が
@@ -140,7 +140,7 @@ k6 run --out json=perf-tests/results/baseline-read-$(date +%Y%m%d-%H%M%S).json \
 何が起きたか知りたい場合は、バックエンドのログで `unexpected exception` を
 grepし、`exception_type` の値(`org.sqlite.SQLiteException` 等)を確認してください。
 
-### `unbounded-results.js` の見方
+### `unbounded-results.ts` の見方
 
 `unbounded_comments_response_bytes` / `unbounded_user_posts_response_bytes` という
 カスタムTrendメトリクスで、1リクエストあたりのレスポンスサイズを記録しています。
@@ -169,7 +169,7 @@ grepし、`exception_type` の値(`org.sqlite.SQLiteException` 等)を確認し�
 - **`posts.user_id` / `comments.post_id` / `follows.followed_id` へのインデックス追加**:
   現状FlywayマイグレーションにはPKと2つのUNIQUE複合制約しかありません。
 - **`GET /api/posts/{postId}/comments` / `GET /api/users/{id}/posts` へのページネーション追加**:
-  現状は全件返却です。`unbounded-results.js` はこの影響を計測するためのシナリオです。
+  現状は全件返却です。`unbounded-results.ts` はこの影響を計測するためのシナリオです。
 - **レート制限**: 現状未実装です。将来的に本番に何らかの形で負荷試験を行う
   可能性が出てきた場合は、その前提として検討が必要です(今回のテストは
   ローカル限定のため対象外)。

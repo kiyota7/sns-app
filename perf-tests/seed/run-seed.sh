@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# seed.js を実行し、標準出力に出てくる `SEED_MANIFEST_JSON:` 行を拾って
+# seed.ts を実行し、標準出力に出てくる `SEED_MANIFEST_JSON:` 行を拾って
 # perf-tests/results/seed-manifest.json に書き出す。
 #
 # k6 スクリプト自身はファイルを書き込めない(サンドボックスの制約)ため、
 # このシェルスクリプトが「k6の実行」と「結果ファイルの書き出し」を橋渡しする。
-# 各シナリオ(write-contention.js / unbounded-results.js 等)は
+# 各シナリオ(write-contention.ts / unbounded-results.ts 等)は
 # results/seed-manifest.json を前提に動くので、シード投入は必ずこのスクリプト
-# 経由で行うこと(`k6 run seed.js` を直接叩いても投入自体はできるが、
+# 経由で行うこと(`k6 run seed.ts` を直接叩いても投入自体はできるが、
 # マニフェストファイルが更新されない)。
 #
 # 抽出がやや込み入っている理由: k6は console.log() の出力を、素の行としてではなく
@@ -21,18 +21,18 @@ PERF_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 mkdir -p "${PERF_DIR}/results"
 
-echo "[perf-tests] running seed.js ..."
+echo "[perf-tests] running seed.ts ..."
 OUTPUT_FILE="$(mktemp)"
 trap 'rm -f "${OUTPUT_FILE}"' EXIT
 
 # k6の標準出力をそのまま画面に出しつつ、あとでマニフェスト行を探せるように
 # 一時ファイルにも保存する。
-k6 run "${SCRIPT_DIR}/seed.js" "$@" | tee "${OUTPUT_FILE}"
+k6 run "${SCRIPT_DIR}/seed.ts" "$@" | tee "${OUTPUT_FILE}"
 
 if ! python3 "${SCRIPT_DIR}/extract-manifest.py" "${OUTPUT_FILE}" "${PERF_DIR}/results/seed-manifest.json"; then
   echo "" >&2
   echo "[perf-tests] エラー: SEED_MANIFEST_JSON をk6の出力から取り出せませんでした。" >&2
-  echo "seed.js が途中で失敗した可能性があります。上のログを確認してください。" >&2
+  echo "seed.ts が途中で失敗した可能性があります。上のログを確認してください。" >&2
   exit 1
 fi
 

@@ -1,22 +1,22 @@
-// unbounded-results.js: ページネーションが無いエンドポイントの負荷テスト。
+// unbounded-results.ts: ページネーションが無いエンドポイントの負荷テスト。
 //
 // GET /api/posts/{postId}/comments (CommentMapper.findByPostIdOrderByCreatedAtDesc)
 // と GET /api/users/{id}/posts (PostMapper.findByUserIdOrderByCreatedAtDesc) は
 // どちらもLIMIT句が無く、対象データを全件返す。かつ posts.user_id /
 // comments.post_id に二次インデックスも無い。データ量がほぼ空のDBでは
-// 問題にならないため、seed.js が作る「バズった投稿(大量コメント)」
+// 問題にならないため、seed.ts が作る「バズった投稿(大量コメント)」
 // 「最も投稿数の多いパワーユーザー」を固定ターゲットにして負荷をかけ、
 // レイテンシとレスポンスサイズの両方を計測する。
 //
 // 事前に `perf-tests/seed/run-seed.sh` でシード投入しておくこと。
 //
-// 実行: k6 run perf-tests/scenarios/unbounded-results.js
+// 実行: k6 run perf-tests/scenarios/unbounded-results.ts
 import { check, sleep } from 'k6';
 import { Trend } from 'k6/metrics';
-import { assertLocalOnly, BASE_URL } from '../config/environment.js';
-import { getJson } from '../lib/http.js';
-import { loginAsSeededUser } from '../lib/auth.js';
-import { requireManifest } from '../lib/data.js';
+import { assertLocalOnly, BASE_URL } from '../config/environment.ts';
+import { getJson } from '../lib/http.ts';
+import { loginAsSeededUser, Session } from '../lib/auth.ts';
+import { requireManifest } from '../lib/data.ts';
 
 const manifest = requireManifest();
 if (!manifest.viralPosts || manifest.viralPosts.length === 0 || !manifest.busiestPowerUser) {
@@ -46,16 +46,20 @@ export const options = {
   },
 };
 
-let session = null;
+export function setup(): void {
+  assertLocalOnly();
+}
 
-function ensureSession() {
+let session: Session | null = null;
+
+function ensureSession(): Session {
   if (!session) {
     session = loginAsSeededUser(BASE_URL, manifest.userCount);
   }
   return session;
 }
 
-export default function () {
+export default function (): void {
   const { accessToken } = ensureSession();
 
   if (__ITER % 2 === 0) {
