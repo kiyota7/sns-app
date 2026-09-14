@@ -9,8 +9,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-@Configuration
-public class WebConfig implements WebMvcConfigurer {
+// @Beanメソッドを持たないため、CGLIBによるフルモードの拡張(サブクラス化)は
+// 不要。proxyBeanMethods=falseにすることで、finalクラスのままでも
+// Springがこのクラスをそのままコンフィギュレーションクラスとして扱える。
+@Configuration(proxyBeanMethods = false)
+public final class WebConfig implements WebMvcConfigurer {
 
     private final Path uploadDir;
 

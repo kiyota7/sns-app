@@ -114,6 +114,21 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+			<!--
+				CIの静的解析(backend-static-analysisジョブ)から `mvn compile spotbugs:check`
+				として明示的に呼び出す。<executions>は設定せず、通常のライフサイクル
+				(mvn test 等)には一切影響させない。
+			-->
+			<plugin>
+				<groupId>com.github.spotbugs</groupId>
+				<artifactId>spotbugs-maven-plugin</artifactId>
+				<version>4.10.4.1</version>
+				<configuration>
+					<effort>Max</effort>
+					<threshold>Medium</threshold>
+					<excludeFilterFile>spotbugs-exclude.xml</excludeFilterFile>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 

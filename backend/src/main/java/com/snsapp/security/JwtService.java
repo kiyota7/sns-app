@@ -13,7 +13,7 @@ import java.util.Date;
 import java.util.UUID;
 
 @Service
-public class JwtService {
+public final class JwtService {
 
     public static final String TYPE_ACCESS = "access";
     public static final String TYPE_REFRESH = "refresh";

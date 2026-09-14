@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    SpotBugsが検出する EI_EXPOSE_REP2 (コンストラクタで外部の可変オブジェクトを
+    フィールドにそのまま保持する) は、ここに列挙したクラスではSpringのコンストラクタ
+    インジェクションによって注入される、MyBatis Mapper・Service・セキュリティ関連の
+    シングルトンBeanを保持しているだけであり、防御的コピーが意味を持たない
+    (これらはコピー可能なデータ構造ではなく、状態を持たないコラボレーターのため)。
+    Spring DIコードベースにおける典型的な誤検知パターンとして、対象クラスを
+    ピンポイントに指定して除外する(EI_EXPOSE_REP2という特定のバグパターンのみ、
+    かつ列挙したクラスのみに限定しており、他のクラス・他のバグパターンには影響しない)。
+-->
+<FindBugsFilter>
+    <Match>
+        <Class name="com.snsapp.config.SecurityConfig" />
+        <Bug pattern="EI_EXPOSE_REP2" />
+    </Match>
+    <Match>
+        <Class name="com.snsapp.controller.PostController" />
+        <Bug pattern="EI_EXPOSE_REP2" />
+    </Match>
+    <Match>
+        <Class name="com.snsapp.security.JwtAuthenticationFilter" />
+        <Bug pattern="EI_EXPOSE_REP2" />
+    </Match>
+    <Match>
+        <Class name="com.snsapp.service.AuthService" />
+        <Bug pattern="EI_EXPOSE_REP2" />
+    </Match>
+    <Match>
+        <Class name="com.snsapp.service.CommentService" />
+        <Bug pattern="EI_EXPOSE_REP2" />
+    </Match>
+    <Match>
+        <Class name="com.snsapp.service.PostService" />
+        <Bug pattern="EI_EXPOSE_REP2" />
+    </Match>
+    <Match>
+        <Class name="com.snsapp.service.UserService" />
+        <Bug pattern="EI_EXPOSE_REP2" />
+    </Match>
+    <Match>
+        <Class name="com.snsapp.storage.S3ImageStorageService" />
+        <Bug pattern="EI_EXPOSE_REP2" />
+    </Match>
+</FindBugsFilter>
