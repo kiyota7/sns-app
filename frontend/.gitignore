@@ -28,3 +28,9 @@ coverage
 
 # Vite
 *.timestamp-*-*.mjs
+
+# Playwright (e2e/)
+e2e/results/*
+!e2e/results/.gitkeep
+e2e/test-results/
+e2e/playwright-report/
