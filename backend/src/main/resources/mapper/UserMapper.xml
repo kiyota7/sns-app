@@ -58,14 +58,20 @@
         WHERE users.id = #{id}
     </select>
 
-    <!-- avatarUrlが指定されなかった場合(アイコン画像を変更しない編集)は既存の値を保持する -->
+    <!--
+        avatarUrlが指定されなかった場合(アイコン画像を変更しない編集)は既存の値を保持する。
+        updated_atはDB側の日時関数(strftime等)を使わず、Java側で計算した値を
+        バインドパラメータとして渡している。SQLite専用関数を使うとPostgreSQLでは
+        動作しないため、SQLite/PostgreSQL両プロファイルで共有しているこのファイルを
+        DBごとに分岐させずに済むようにするための設計(com.snsapp.util.Timestamps参照)。
+    -->
     <update id="updateProfile">
         UPDATE users
         <set>
             username = #{username},
             bio = #{bio},
             <if test="avatarUrl != null">avatar_url = #{avatarUrl},</if>
-            updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+            updated_at = #{updatedAt}
         </set>
         WHERE id = #{id}
     </update>

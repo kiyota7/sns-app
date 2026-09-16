@@ -97,7 +97,7 @@ class UserServiceTest {
         ProfileResponse response = userService.updateProfile(1L, "newname", "bio", null);
 
         assertThat(response.username()).isEqualTo("newname");
-        verify(userMapper).updateProfile(1L, "newname", "bio", null);
+        verify(userMapper).updateProfile(eq(1L), eq("newname"), eq("bio"), isNull(), any());
     }
 
     @Test
@@ -109,7 +109,7 @@ class UserServiceTest {
 
         assertThatThrownBy(() -> userService.updateProfile(1L, "taken", "bio", null))
                 .isInstanceOf(DuplicateUserException.class);
-        verify(userMapper, never()).updateProfile(any(), any(), any(), any());
+        verify(userMapper, never()).updateProfile(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -122,7 +122,7 @@ class UserServiceTest {
 
         userService.updateProfile(1L, "alice", "new bio", null);
 
-        verify(userMapper).updateProfile(1L, "alice", "new bio", null);
+        verify(userMapper).updateProfile(eq(1L), eq("alice"), eq("new bio"), isNull(), any());
     }
 
     @Test
@@ -134,7 +134,7 @@ class UserServiceTest {
 
         userService.updateProfile(1L, "alice", "bio", avatar);
 
-        verify(userMapper).updateProfile(1L, "alice", "bio", "/uploads/icon-generated.png");
+        verify(userMapper).updateProfile(eq(1L), eq("alice"), eq("bio"), eq("/uploads/icon-generated.png"), any());
     }
 
     @Test
@@ -144,7 +144,7 @@ class UserServiceTest {
 
         userService.updateProfile(1L, "alice", "bio", null);
 
-        verify(userMapper).updateProfile(eq(1L), eq("alice"), eq("bio"), isNull());
+        verify(userMapper).updateProfile(eq(1L), eq("alice"), eq("bio"), isNull(), any());
         verify(imageStorageService, never()).store(any());
     }
 

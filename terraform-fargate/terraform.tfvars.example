@@ -1,0 +1,13 @@
+# このファイルをコピーして terraform.tfvars を作成し、実際の値を入力すること。
+# terraform.tfvars は .gitignore 対象なのでコミットされない。
+
+aws_region = "ap-northeast-1"
+
+# ランダムな値を生成して設定する(例: openssl rand -base64 48)
+jwt_secret = "change-me"
+
+# 以下は既定値のままで問題なければ省略可。
+# allowed_http_cidr  = "0.0.0.0/0"
+# db_username        = "snsapp"
+# db_name            = "snsapp"
+# container_image_tag = "latest"

@@ -10,6 +10,7 @@ import com.snsapp.mapper.LikeMapper;
 import com.snsapp.mapper.PostMapper;
 import com.snsapp.model.Post;
 import com.snsapp.storage.ImageStorageService;
+import com.snsapp.util.Timestamps;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -76,7 +77,7 @@ public class PostService {
         Post post = findByIdOrThrow(postId, requesterId);
         requireOwner(post, requesterId);
 
-        postMapper.update(postId, body);
+        postMapper.update(postId, body, Timestamps.nowIso());
 
         return PostResponse.from(findByIdOrThrow(postId, requesterId));
     }

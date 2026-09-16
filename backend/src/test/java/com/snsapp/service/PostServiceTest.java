@@ -144,7 +144,7 @@ class PostServiceTest {
 
         postService.update(1L, 1L, "updated body");
 
-        verify(postMapper).update(1L, "updated body");
+        verify(postMapper).update(eq(1L), eq("updated body"), any());
     }
 
     @Test
@@ -154,7 +154,7 @@ class PostServiceTest {
 
         assertThatThrownBy(() -> postService.update(1L, 2L, "hacked body"))
                 .isInstanceOf(ForbiddenPostAccessException.class);
-        verify(postMapper, never()).update(any(), any());
+        verify(postMapper, never()).update(any(), any(), any());
     }
 
     @Test

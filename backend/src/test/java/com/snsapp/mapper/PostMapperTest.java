@@ -3,6 +3,7 @@ package com.snsapp.mapper;
 import com.snsapp.model.Comment;
 import com.snsapp.model.Post;
 import com.snsapp.model.User;
+import com.snsapp.util.Timestamps;
 import org.junit.jupiter.api.Test;
 import org.mybatis.spring.boot.test.autoconfigure.MybatisTest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -178,7 +179,7 @@ class PostMapperTest {
         User alice = insertUser("alice");
         Post post = insertPost(alice.getId(), "original");
 
-        postMapper.update(post.getId(), "edited");
+        postMapper.update(post.getId(), "edited", Timestamps.nowIso());
 
         Post found = postMapper.findById(post.getId(), alice.getId()).orElseThrow();
         assertThat(found.getBody()).isEqualTo("edited");
