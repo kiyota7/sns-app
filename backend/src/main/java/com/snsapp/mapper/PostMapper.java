@@ -28,7 +28,7 @@ public interface PostMapper {
 
     Optional<Post> findById(@Param("id") Long id, @Param("currentUserId") Long currentUserId);
 
-    void update(@Param("id") Long id, @Param("body") String body);
+    void update(@Param("id") Long id, @Param("body") String body, @Param("updatedAt") String updatedAt);
 
     void delete(@Param("id") Long id);
 }

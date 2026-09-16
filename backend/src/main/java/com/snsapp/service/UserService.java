@@ -12,6 +12,7 @@ import com.snsapp.mapper.PostMapper;
 import com.snsapp.mapper.UserMapper;
 import com.snsapp.model.UserProfile;
 import com.snsapp.storage.ImageStorageService;
+import com.snsapp.util.Timestamps;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -56,7 +57,7 @@ public class UserService {
                 });
 
         String avatarUrl = (avatar != null && !avatar.isEmpty()) ? imageStorageService.store(avatar) : null;
-        userMapper.updateProfile(userId, username, bio, avatarUrl);
+        userMapper.updateProfile(userId, username, bio, avatarUrl, Timestamps.nowIso());
 
         return ProfileResponse.from(findProfileOrThrow(userId, userId));
     }

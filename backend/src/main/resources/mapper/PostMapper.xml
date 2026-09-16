@@ -77,9 +77,15 @@
         LIMIT #{fetchLimit}
     </select>
 
+    <!--
+        updated_atはDB側の日時関数(strftime等)を使わず、Java側で計算した値を
+        バインドパラメータとして渡している。SQLite専用関数を使うとPostgreSQLでは
+        動作しないため、SQLite/PostgreSQL両プロファイルで共有しているこのファイルを
+        DBごとに分岐させずに済むようにするための設計(com.snsapp.util.Timestamps参照)。
+    -->
     <update id="update">
         UPDATE posts
-        SET body = #{body}, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+        SET body = #{body}, updated_at = #{updatedAt}
         WHERE id = #{id}
     </update>
 

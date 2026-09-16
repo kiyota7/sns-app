@@ -8,6 +8,14 @@ terraform/terraform.tfvars
 terraform/crash.log
 terraform/tfplan*
 
+# Terraform(ECS Fargate構成。terraform/とはstateを分離した独立ディレクトリ)
+terraform-fargate/.terraform/
+terraform-fargate/*.tfstate
+terraform-fargate/*.tfstate.*
+terraform-fargate/terraform.tfvars
+terraform-fargate/crash.log
+terraform-fargate/tfplan*
+
 # 本番用環境変数(秘密情報)
 .env
 

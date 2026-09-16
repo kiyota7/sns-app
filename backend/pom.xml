@@ -53,6 +53,25 @@
 			<artifactId>sqlite-jdbc</artifactId>
 			<version>${sqlite-jdbc.version}</version>
 		</dependency>
+		<!--
+			ECS Fargate + RDS(PostgreSQL)構成向け。SQLite経路(既存)とは並存し、
+			"postgres" プロファイル有効時のみ application-postgres.properties 側で使われる。
+			バージョンはSpring Boot BOMが管理するため明示しない。
+		-->
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<!--
+			Flyway 10以降、DB方言ごとのサポートがflyway-coreから分離された。
+			SQLiteはflyway-core本体に同梱されているため追加不要だが、PostgreSQLは
+			このモジュールが無いとマイグレーションが実行できない。
+		-->
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-postgresql</artifactId>
+		</dependency>
 
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>

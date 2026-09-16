@@ -26,7 +26,8 @@ public interface UserMapper {
             @Param("id") Long id,
             @Param("username") String username,
             @Param("bio") String bio,
-            @Param("avatarUrl") String avatarUrl
+            @Param("avatarUrl") String avatarUrl,
+            @Param("updatedAt") String updatedAt
     );
 
     List<UserSearchResult> search(@Param("query") String query, @Param("currentUserId") Long currentUserId);

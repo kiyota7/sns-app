@@ -3,6 +3,7 @@ package com.snsapp.mapper;
 import com.snsapp.model.User;
 import com.snsapp.model.UserProfile;
 import com.snsapp.model.UserSearchResult;
+import com.snsapp.util.Timestamps;
 import org.junit.jupiter.api.Test;
 import org.mybatis.spring.boot.test.autoconfigure.MybatisTest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -92,7 +93,7 @@ class UserMapperTest {
     void updateProfile_withAvatarUrl_updatesAllFields() {
         User user = insertUser("dave", "dave@example.com");
 
-        userMapper.updateProfile(user.getId(), "dave-renamed", "new bio", "/uploads/avatar.jpg");
+        userMapper.updateProfile(user.getId(), "dave-renamed", "new bio", "/uploads/avatar.jpg", Timestamps.nowIso());
 
         UserProfile profile = userMapper.findProfileById(user.getId(), user.getId()).orElseThrow();
         assertThat(profile.getUsername()).isEqualTo("dave-renamed");
@@ -103,10 +104,10 @@ class UserMapperTest {
     @Test
     void updateProfile_withoutAvatarUrl_preservesExistingAvatarUrl() {
         User user = insertUser("erin", "erin@example.com");
-        userMapper.updateProfile(user.getId(), "erin", "first bio", "/uploads/original.jpg");
+        userMapper.updateProfile(user.getId(), "erin", "first bio", "/uploads/original.jpg", Timestamps.nowIso());
 
         // avatarUrlにnullを渡す = アイコンを再アップロードしない編集
-        userMapper.updateProfile(user.getId(), "erin", "second bio", null);
+        userMapper.updateProfile(user.getId(), "erin", "second bio", null, Timestamps.nowIso());
 
         UserProfile profile = userMapper.findProfileById(user.getId(), user.getId()).orElseThrow();
         assertThat(profile.getBio()).isEqualTo("second bio");
